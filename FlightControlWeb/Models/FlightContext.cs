@@ -11,8 +11,10 @@ namespace FlightControlWeb.Models
         public FlightContext(DbContextOptions<FlightContext> options)
             : base(options)
         {
-        }
 
-        public DbSet<Flight> Flights { get; set; }
+
+    }
+
+    public DbSet<Flight> Flights { get; set; }
     }
 }

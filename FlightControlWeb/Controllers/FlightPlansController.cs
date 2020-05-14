@@ -24,7 +24,17 @@ namespace FlightControlWeb.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<FlightPlan>>> GetFlightPlan()
         {
-            return await _context.FlightPlan.ToListAsync();
+            List<FlightPlan> fp = await _context.FlightPlan.ToListAsync();
+            foreach (FlightPlan element in fp)
+            {
+                string id = element.flight_id;
+                var loc = await _context.first_location.ToListAsync();
+                var seg = await _context.segments.ToListAsync();
+
+                element.initial_location = loc.Where(a => a.flight_id.CompareTo(id) == 0).First();
+                element.segments = seg.Where(a => a.flight_id.CompareTo(id) == 0).ToList();
+            }
+            return fp;
         }
 
         // GET: api/FlightPlans/5
@@ -79,7 +89,7 @@ namespace FlightControlWeb.Controllers
         [HttpPost]
         public async Task<ActionResult<FlightPlan>> PostFlightPlan(FlightPlan flightPlan)
         {
-            _context.FlightPlan.Add(flightPlan);
+/*            _context.FlightPlan.Add(flightPlan);
             try
             {
                 await _context.SaveChangesAsync();
@@ -94,7 +104,22 @@ namespace FlightControlWeb.Controllers
                 {
                     throw;
                 }
+            }*/
+
+            //SET ID
+            _context.FlightPlan.Add(flightPlan);
+            //create flight with the relevent flight id. *** the flight id is placed just when adding it to the DataBase
+            flightPlan.flight_id = flightPlan.flight_id.ToString();
+            var loc = flightPlan.initial_location;
+            loc.flight_id = flightPlan.flight_id;
+            _context.first_location.Add(loc);
+            var seg = flightPlan.segments;
+            foreach (Segment element in seg)
+            {
+                element.flight_id = flightPlan.flight_id;
+                _context.segments.Add(element);
             }
+            await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetFlightPlan", new { id = flightPlan.flight_id }, flightPlan);
         }

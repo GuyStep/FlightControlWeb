@@ -8,10 +8,17 @@ namespace FlightControlWeb.Models
 {
     public class FlightPlanContext : DbContext
     {
+
         public FlightPlanContext(DbContextOptions<FlightPlanContext> options)
             : base(options)
         {
+
+
         }
+        public DbSet<Location> first_location { get; set; }
+        public DbSet<Segment> segments { get; set; }
+        public DbSet<Flight> flight { get; set; }
+        //public DbSet<Server> server { get; set; }
 
         public DbSet<FlightPlan> FlightPlan { get; set; }
     }
