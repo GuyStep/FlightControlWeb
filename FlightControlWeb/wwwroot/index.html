@@ -7,8 +7,22 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
-    <style> </style>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/addons/p5.sound.min.js"></script>
+    <script type="text/javascript" src="draganddrop.js"></script>
+
+    <style>
+    </style>
     <script src="JavaScript.js"></script>
+
+    <style>
+        #dropzone {
+            padding: 24px;
+            border-style: dashed;
+            font-size: 36pt;
+            width: 50%;
+        }
+    </style>
 </head>
 <body>
     <table class="flights-table" id="flightTable2">
@@ -56,9 +70,33 @@
                     <th>Latitude</th>
                 </tr>
             </thead>
-            
+
         </table>
     </div>
+
+
+
+
+    <div id="dropzone">
+        <div class="col-lg-4 pr-5" ondragover="uploadOnDragOver()" style="z-index:2;">
+            <div id="dropArea" class="row overlay-div pr-3" ondragleave="uploadOnDragLeave()" ondrop="uploadOnDrop()">
+                <div class="w-100 h-100 rounded-lg border border-primary bg-primary">
+                    <div style="display: table; width: 100%; height: 100%; vertical-align: middle;">
+                        <!-- <img src="images/upload.png" class="img-fluid" /> -->
+                        <h3 class="text-white" style="display: table-cell; vertical-align: middle;">
+                            Drag and Drop
+                        </h3>
+                        <form method="post">
+                            <input id="myFlightsInput" type="file" class="w-100 h-100" style="position:absolute;right:0px;top:0;padding:0px 2px; opacity: 0;" />
+                        </form>
+                    </div>
+                </div>
+            </div>
+            Drag your file here.
+        </div>
+    </div>
+
+
 
 </body>
 </html>

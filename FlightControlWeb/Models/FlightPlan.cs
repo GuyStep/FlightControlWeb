@@ -11,6 +11,7 @@ namespace FlightControlWeb.Models
 {
     public class FlightPlan
     {
+        [JsonIgnore]
         [Key]
         public string flight_id { get; set; }
         public double longitude { get; set; }

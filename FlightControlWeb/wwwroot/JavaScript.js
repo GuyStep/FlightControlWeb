@@ -14,8 +14,8 @@ function g() {
 function successsCallback(jData) {
     let table = document.getElementById("flightTable");
     //alert(jData[0].flight_id);
-    alert("Guy");
-    alert(jData);
+    //alert("Guy");
+    //alert(jData);
     jData.forEach(function (item, i) {
         let row = document.createElement("tr");
         let td1 = document.createElement("td");

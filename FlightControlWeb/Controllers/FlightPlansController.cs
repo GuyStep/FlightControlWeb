@@ -107,9 +107,12 @@ namespace FlightControlWeb.Controllers
             }*/
 
             //SET ID
+            flightPlan.flight_id = getNewId(flightPlan.company_name.ToString(), flightPlan.initial_location.date_time.ToString());
+            flightPlan.date_time = flightPlan.initial_location.date_time;
+            flightPlan.longitude = flightPlan.initial_location.longitude;
+            flightPlan.latitude = flightPlan.initial_location.latitude;
             _context.FlightPlan.Add(flightPlan);
             //create flight with the relevent flight id. *** the flight id is placed just when adding it to the DataBase
-            flightPlan.flight_id = flightPlan.flight_id.ToString();
             var loc = flightPlan.initial_location;
             loc.flight_id = flightPlan.flight_id;
             _context.first_location.Add(loc);
@@ -144,5 +147,23 @@ namespace FlightControlWeb.Controllers
         {
             return _context.FlightPlan.Any(e => e.flight_id == id);
         }
+
+        private string getNewId(string company,string time)
+        {
+            string ID = "";
+            ID += company.Substring(0, 2);
+            ID += time.Substring(5, 2);
+            ID += time.Substring(8, 2);
+
+            var rand = new Random();
+            int num = rand.Next(0, 10);
+
+            ID += num;
+            num = rand.Next(0, 10);
+            ID += num;
+
+            return ID;
+        }
     }
 }
+

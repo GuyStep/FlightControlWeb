@@ -13,9 +13,9 @@ namespace FlightControlWeb.Controllers
     [ApiController]
     public class FlightsController : ControllerBase
     {
-        private readonly FlightContext _context;
+        private readonly FlightPlanContext _context;
 
-        public FlightsController(FlightContext context)
+        public FlightsController(FlightPlanContext context)
         {
             _context = context;
         }
@@ -25,24 +25,44 @@ namespace FlightControlWeb.Controllers
         public async Task<ActionResult<IEnumerable<Flight>>> GetFlights()
         {
 
-            var cont = await _context.Flights.ToListAsync();
-            //cont = cont.Where(a => a.flight_id == "1234").ToList();
+            //var cont = await _context.FlightPlan.ToListAsync();
+            ////cont = cont.Where(a => a.flight_id == "1234").ToList();
 
-            return cont;
+            //return cont;
+            _context.SaveChanges();
+
+            List<Flight> flights = new List<Flight>();
+            List<FlightPlan> fp = await _context.FlightPlan.ToListAsync();
+            foreach (FlightPlan element in fp)
+            {
+                Flight fl = new Flight();
+                fl.flight_id = element.flight_id;
+                fl.company_name = element.company_name;
+                fl.date_time = element.date_time;
+                fl.is_external = element.is_external;
+                fl.latitude = element.latitude;
+                fl.longitude = element.longitude;
+                fl.passengers = element.passengers;
+
+
+                flights.Add(fl);
+            }
+            return flights;
         }
 
         // GET: api/Flights/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Flight>> GetFlight(string id)
         {
-            var flight = await _context.Flights.FindAsync(id);
+            //var flight = await _context.FlightPlan.FindAsync(id);
 
-            if (flight == null)
-            {
-                return NotFound();
-            }
+            //if (flight == null)
+            //{
+            //    return NotFound();
+            //}
 
-            return flight;
+            //return flight;
+            return null;
         }
 
         // PUT: api/Flights/5
@@ -83,45 +103,49 @@ namespace FlightControlWeb.Controllers
         [HttpPost]
         public async Task<ActionResult<Flight>> PostFlight(Flight flight)
         {
-            _context.Flights.Add(flight);
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateException)
-            {
-                if (FlightExists(flight.flight_id))
-                {
-                    return Conflict();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            //_context.FlightPlan.Add(flight);
+            //try
+            //{
+            //    await _context.SaveChangesAsync();
+            //}
+            //catch (DbUpdateException)
+            //{
+            //    if (FlightExists(flight.flight_id))
+            //    {
+            //        return Conflict();
+            //    }
+            //    else
+            //    {
+            //        throw;
+            //    }
+            //}
 
-            return CreatedAtAction("GetFlight", new { id = flight.flight_id }, flight);
+            //return CreatedAtAction("GetFlight", new { id = flight.flight_id }, flight);
+            return null;
+
         }
 
         // DELETE: api/Flights/5
         [HttpDelete("{id}")]
         public async Task<ActionResult<Flight>> DeleteFlight(string id)
         {
-            var flight = await _context.Flights.FindAsync(id);
-            if (flight == null)
-            {
-                return NotFound();
-            }
+            //var flight = await _context.FlightPlan.FindAsync(id);
+            //if (flight == null)
+            //{
+            //    return NotFound();
+            //}
 
-            _context.Flights.Remove(flight);
-            await _context.SaveChangesAsync();
+            //_context.FlightPlan.Remove(flight);
+            //await _context.SaveChangesAsync();
 
-            return flight;
+            //return flight;
+            return null;
+
         }
 
         private bool FlightExists(string id)
         {
-            return _context.Flights.Any(e => e.flight_id == id);
+            return _context.FlightPlan.Any(e => e.flight_id == id);
         }
     }
 }
