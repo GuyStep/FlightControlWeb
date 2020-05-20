@@ -19,7 +19,9 @@ namespace FlightControlWeb.Models
         public Location initial_location { get; set; }
         public int passengers { get; set; }
         public string company_name { get; set; }
+        [JsonIgnore]
         public string date_time { get; set; }
+        [JsonIgnore]
         public bool is_external { get; set; }
         //[JsonPropertyName("segments")]
         public List<Segment> segments { get; set; }

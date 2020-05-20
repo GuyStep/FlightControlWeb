@@ -1,43 +1,31 @@
-﻿let dropArea = document.getElementById('drop-area')
-
-dropArea.addEventListener('dragenter', preventDefaults, false)
-dropArea.addEventListener('dragleave', preventDefaults, false)
-dropArea.addEventListener('dragover', preventDefaults, false)
-dropArea.addEventListener('drop', preventDefaults, false)
-
-function preventDefaults(e) {
-    e.preventDefault()
-    e.stopPropagation()
+﻿
+function uploadOnDragOver() {
+    document.getElementById("dropArea").style.display = "inline";
 }
 
-;['dragenter', 'dragover'].forEach(eventName => {
-    dropArea.addEventListener(eventName, highlight, false)
-})
-
-;['dragleave', 'drop'].forEach(eventName => {
-    dropArea.addEventListener(eventName, unhighlight, false)
-})
-
-function highlight(e) {
-    dropArea.classList.add('highlight')
+function uploadOnDragLeave() {
+    document.getElementById("dropArea").style.display = "none";
+}
+function uploadOnDrop() {
+    document.getElementById("dropArea").style.display = "none";
+    setTimeout(submit, 100);
 }
 
-function unhighlight(e) {
-    dropArea.classList.remove('highlight')
+function submit() {
+    let inputFile = document.getElementById("myFlightsInput").files[0];
+
+    let reader = new FileReader();
+
+    let jdata;
+    reader.onload = function () {
+        jdata = reader.result.replace('/r', '');
+        postData(jdata);
+    }
+    reader.readAsText(inputFile);
 }
-
-dropArea.addEventListener('drop', handleDrop, false)
-
-function handleDrop(e) {
-    let dt = e.dataTransfer
-    let files = dt.files
-
-    handleFiles(files)
-}
-
-function handleFiles(files) {
-
-    var file = files[0]
-
-
+function postData(jdata) {
+    let request = new XMLHttpRequest();
+    request.open("POST", "/api/FlightPlans", true);
+    request.setRequestHeader("Content-Type", "application/json");
+    request.send(jdata);
 }

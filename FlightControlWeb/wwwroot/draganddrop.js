@@ -1,5 +1,4 @@
-﻿
-function uploadOnDragOver() {
+﻿function uploadOnDragOver() {
     document.getElementById("dropArea").style.display = "inline";
 }
 

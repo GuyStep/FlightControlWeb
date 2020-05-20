@@ -8,7 +8,6 @@ using Microsoft.EntityFrameworkCore;
 using FlightControlWeb.Models;
 
 
-// Amit here
 namespace FlightControlWeb.Controllers
 {
     [Route("api/[controller]")]
@@ -50,40 +49,18 @@ namespace FlightControlWeb.Controllers
                 return NotFound();
             }
 
+
+            var loc = await _context.first_location.ToListAsync();
+            var seg = await _context.segments.ToListAsync();
+
+            flightPlan.initial_location = loc.Where(a => a.flight_id.CompareTo(id) == 0).First();
+            flightPlan.segments = seg.Where(a => a.flight_id.CompareTo(id) == 0).ToList();
+
+
+
             return flightPlan;
         }
 
-        // PUT: api/FlightPlans/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for
-        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutFlightPlan(string id, FlightPlan flightPlan)
-        {
-            if (id != flightPlan.flight_id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(flightPlan).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!FlightPlanExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
 
         // POST: api/FlightPlans
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
@@ -127,22 +104,6 @@ namespace FlightControlWeb.Controllers
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetFlightPlan", new { id = flightPlan.flight_id }, flightPlan);
-        }
-
-        // DELETE: api/FlightPlans/5
-        [HttpDelete("{id}")]
-        public async Task<ActionResult<FlightPlan>> DeleteFlightPlan(string id)
-        {
-            var flightPlan = await _context.FlightPlan.FindAsync(id);
-            if (flightPlan == null)
-            {
-                return NotFound();
-            }
-
-            _context.FlightPlan.Remove(flightPlan);
-            await _context.SaveChangesAsync();
-
-            return flightPlan;
         }
 
         private bool FlightPlanExists(string id)
