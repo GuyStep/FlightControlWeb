@@ -4,8 +4,12 @@
 <head>
     <meta charset="utf-8" />
     <title>Advanced Programming II - FlightControl</title>
-    <link rel="stylesheet" href="leaflet/leaflet.css" />
-    <script src="leaflet/leaflet.js"></script>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
+
+    <!--<link rel="stylesheet" href="leaflet/leaflet.css" />
+    <script src="leaflet/leaflet.js"></script>-->
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
@@ -20,7 +24,7 @@
         /* Always set the map height explicitly to define the size of the div
         * element that contains the map. */
         #map {
-            height: 600px;
+            height: 300px;
         }
 
         .overlay-div {
@@ -31,34 +35,62 @@
             text-align: center;
             display: none;
         }
+
         .bg-dark {
-            font-family:"Century Gothic";
+            font-family: "Century Gothic";
+            font-weight: bold;
             background-image: linear-gradient(to bottom right, rgba(55,185,233), rgba(103,195,198), rgba(160,188,178));
         }
+
         .table-light {
             background-color: rgba(176, 178, 181, 0.01);
             border-style: hidden;
             color: white;
         }
+        .btn-primary {
+            color: #41658c;
+            background-color: #d0d0d085;
+            border-color: #b8b4b400;
+            font-weight: 900;
+        }
 
+        .btn-primary:hover {
+            color: #2e87e5b0;
+            background-color: #ffffff;
+            border-color: #b8b4b400;
+            font-weight: 900;
+        }
+
+        #logoDiv {
+            width: auto;
+        }
+        #buttonsDiv {
+            width: auto;
+        }
+        .table thead th {
+            border-bottom: 0px hidden #b8b4b400;
+        }
+        #upperRow {
+            height: 90px;
+        }
     </style>
-    
+
 </head>
 <body class="bg-dark">
     <div class="container-fluid pt-3 bg-dark text-white">
-        <div class="row">
-            <div class="ml-4 mt-4 col-lg-2">
+        <div class="row" id="upperRow">
+            <div class="ml-4 mt-4 col-lg-2" id="logoDiv">
                 <!--<img src="images/FlightControlLogo.png" />-->
-                <h2>Flight Control</h2>
+                <h2 style="width: 300px;">Flight Control</h2>
             </div>
-            <div class="mt-4 col-lg-9">
+            <div class="mt-4 col-lg-9" id="buttonsDiv">
                 <!-- Button to Open the Modal -->
-                <button type="button" class="float-left btn btn-primary" data-toggle="modal" data-target="#setIPModal">
-                    Set IP & Port
+                <button type="button" class="float-right btn btn-primary ml-2" data-toggle="modal" data-target="#serversModal">
+                    Servers
                 </button>
                 <!-- Button to Open the Modal -->
-                <button type="button" class="float-left btn btn-primary ml-2" data-toggle="modal" data-target="#serversModal">
-                    Servers
+                <button type="button" class="float-right btn btn-primary" data-toggle="modal" data-target="#setIPModal">
+                    Set IP & Port
                 </button>
                 <!-- The Modal -->
                 <div class="modal fade" id="setIPModal">
@@ -113,9 +145,15 @@
         <div class="row">
             <div class="col-lg-8">
                 <div id="map" class="m-3"></div>
-                <div class="row">
-                    <div class="m-4 p-3 w-100 h-100 rounded-lg border border-primary bg-primary" id="tableCol">
-                        <table id="flight_details" class="table text-white">
+                <script>
+                    var map = L.map('map').setView([0, 0], 1);
+                    L.tileLayer('https://api.maptiler.com/maps/pastel/256/{z}/{x}/{y}.png?key=A8iBpAvXtqYbrn2snY4K', {
+                        attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
+                    }).addTo(map);
+                </script>
+                <div class="row" style="height:28vh">
+                    <div class="table table-light" id="tableCol" style="padding:15px; margin:15px;padding-top:0px;margin-top:0px; border-style: hidden;">
+                        <table id="flight_details" class="table table-light" style="border-style:none">
                             <thead>
                                 <tr>
                                     <th>Flight ID</th>

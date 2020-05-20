@@ -1,62 +1,62 @@
-﻿let group = L.layerGroup();
-let polyline;
-let markedMarkerIcon = L.icon({
-    iconUrl: '/pic/marked-plain.png',
-    iconSize: [50, 47], // size of the icon
-    iconAnchor: [50, 47], // point of the icon which will correspond to marker's location
-    popupAnchor: [-3, -76] // point from which the popup should open relative to the iconAnchor
-});
+﻿//let group = L.layerGroup();
+//let polyline;
+//let markedMarkerIcon = L.icon({
+//    iconUrl: '/pic/marked-plain.png',
+//    iconSize: [50, 47], // size of the icon
+//    iconAnchor: [50, 47], // point of the icon which will correspond to marker's location
+//    popupAnchor: [-3, -76] // point from which the popup should open relative to the iconAnchor
+//});
 
 
-let markerIcon = L.icon({
-    iconUrl: '/pic/plain.png',
-    iconSize: [50, 47], // size of the icon
-    iconAnchor: [50, 47], // point of the icon which will correspond to marker's location
-    popupAnchor: [-3, -76] // point from which the popup should open relative to the iconAnchor
-});
+//let markerIcon = L.icon({
+//    iconUrl: '/pic/plain.png',
+//    iconSize: [50, 47], // size of the icon
+//    iconAnchor: [50, 47], // point of the icon which will correspond to marker's location
+//    popupAnchor: [-3, -76] // point from which the popup should open relative to the iconAnchor
+//});
 
 
-$(document).ready(function () {
-    let map = createMap();
-    group.addTo(map);
-    map.on('click', function () {
-        group.clearLayers();
-        deleteFlightDetails()
+//$(document).ready(function () {
+//    let map = createMap();
+//    group.addTo(map);
+//    map.on('click', function () {
+//        group.clearLayers();
+//        deleteFlightDetails()
 
-        //switch all markers icons' to non-marked icon
-        map.eachLayer(function (layer) {
-            if (layer instanceof L.Marker) {
-                layer.setIcon(markerIcon);
-            }
-        });
-    });
-    g(map, polyline);
-})
+//        //switch all markers icons' to non-marked icon
+//        map.eachLayer(function (layer) {
+//            if (layer instanceof L.Marker) {
+//                layer.setIcon(markerIcon);
+//            }
+//        });
+//    });
+//    g(map, polyline);
+//})
 
 
-function g(map, polyline) {
-    //key = flight_id, value = marker on map
-    const planes = new Map();
+//function g(map, polyline) {
+//    //key = flight_id, value = marker on map
+//    const planes = new Map();
 
-    setInterval(function () {
-        let d_ = new Date();
-        let date = getUTC(d_);
-        console.log(date);
-        let url = "/api/Flights?relative_to=";
-        url = url.concat(date);
-        url = url.concat("&syncAll=true");
-        $.ajax({
-            type: "GET",
-            url: url,
-            dataType: 'json',
-            success: function (jdata) {
-                handleFlights(jdata, map, planes, markerIcon, polyline);
-            },
-            error: errorCallback
+//    setInterval(function () {
+//        let d_ = new Date();
+//        let date = getUTC(d_);
+//        console.log(date);
+//        let url = "/api/Flights?relative_to=";
+//        url = url.concat(date);
+//        url = url.concat("&syncAll=true");
+//        $.ajax({
+//            type: "GET",
+//            url: url,
+//            dataType: 'json',
+//            success: function (jdata) {
+//                handleFlights(jdata, map, planes, markerIcon, polyline);
+//            },
+//            error: errorCallback
 
-        });
-    }, 1000);
-}
+//        });
+//    }, 1000);
+//}
 
 function getUTC(d) {
     let day = ('0' + d.getUTCDate()).substr(-2);
@@ -72,72 +72,72 @@ function getUTC(d) {
 
 
 
-function handleFlights(jdata, map, planes, markerIcon, polyline) {
-    jdata.forEach(function (item, i) {
-        if (item.is_relevant) {
-            //current location of the flight
-            let lat = parseFloat(item.latitude);
-            let long = parseFloat(item.longitude);
-            //the flight is already exist
-            if (planes.has(item.flight_id)) {
-                let flightMarker = planes.get(item.flight_id);
-                //set latitude, longitude.
-                flightMarker.setLatLng([lat, long]);
-                //new flight
-            } else {
-                //create a new marker on map.
-                let marker = L.marker([lat, long], { icon: markerIcon }).addTo(map)
-                    .openPopup().on('click', function (e) {
-                        onClick(item, map, polyline, e);
-                    });
-                marker.id = item.flight_id;
-                planes.set(item.flight_id, marker);
-                appendItem(item, map, planes);
-            }
-        }
-        //the flight has been terminated/not started.
-        else {
-            //search if the filght has been terminated and delete it from the table and the map.
-            //if the flight is still on the map, delete it.
-            if (planes.has(item.flight_id)) {
-                endOfFlight(item, map, planes);
-            }
-        }
-    });
+//function handleFlights(jdata, map, planes, markerIcon, polyline) {
+//    jdata.forEach(function (item, i) {
+//        if (item.is_relevant) {
+//            //current location of the flight
+//            let lat = parseFloat(item.latitude);
+//            let long = parseFloat(item.longitude);
+//            //the flight is already exist
+//            if (planes.has(item.flight_id)) {
+//                let flightMarker = planes.get(item.flight_id);
+//                //set latitude, longitude.
+//                flightMarker.setLatLng([lat, long]);
+//                //new flight
+//            } else {
+//                //create a new marker on map.
+//                let marker = L.marker([lat, long], { icon: markerIcon }).addTo(map)
+//                    .openPopup().on('click', function (e) {
+//                        onClick(item, map, polyline, e);
+//                    });
+//                marker.id = item.flight_id;
+//                planes.set(item.flight_id, marker);
+//                appendItem(item, map, planes);
+//            }
+//        }
+//        //the flight has been terminated/not started.
+//        else {
+//            //search if the filght has been terminated and delete it from the table and the map.
+//            //if the flight is still on the map, delete it.
+//            if (planes.has(item.flight_id)) {
+//                endOfFlight(item, map, planes);
+//            }
+//        }
+//    });
 
 
-}
-function errorCallback() {
-    alert("Error");
-}
+//}
+//function errorCallback() {
+//    alert("Error");
+//}
 
 //create a new row at the initial flights
-function appendItem(item, map, planes) {
-    let tableRef = document.getElementById("myFlightsTable").getElementsByTagName('tbody')[0];
-    let row = tableRef.insertRow();
-    //onClick event
-    row.addEventListener("click", function (e) {
-        rowListener(item, row, planes);
-    });
-    row.setAttribute("id", item.flight_id.toString());
-    let cell1 = row.insertCell(0);
-    let cell2 = row.insertCell(1);
-    let cell3 = row.insertCell(2);
-    let cell4 = row.insertCell(3);
-    cell1.innerHTML = item.flight_id;
-    cell2.innerHTML = item.company_name;
-    cell3.innerHTML = item.date_time;
-    let x = document.createElement("INPUT");
-    x.setAttribute("type", "image");
-    x.setAttribute("src", "pic/garbage.png");
-    x.setAttribute("style", "width: 20px;height: 20px");
-    x.addEventListener("click", function () {
-        garbageFunc(item, map, planes);
-    });
-    cell4.appendChild(x);
-    //<td><input type="button" value="Delete Row" onclick="SomeDeleteRowFunction()"></td>
+//function appendItem(item, map, planes) {
+//    let tableRef = document.getElementById("myFlightsTable").getElementsByTagName('tbody')[0];
+//    let row = tableRef.insertRow();
+//    //onClick event
+//    row.addEventListener("click", function (e) {
+//        rowListener(item, row, planes);
+//    });
+//    row.setAttribute("id", item.flight_id.toString());
+//    let cell1 = row.insertCell(0);
+//    let cell2 = row.insertCell(1);
+//    let cell3 = row.insertCell(2);
+//    let cell4 = row.insertCell(3);
+//    cell1.innerHTML = item.flight_id;
+//    cell2.innerHTML = item.company_name;
+//    cell3.innerHTML = item.date_time;
+//    let x = document.createElement("INPUT");
+//    x.setAttribute("type", "image");
+//    x.setAttribute("src", "pic/garbage.png");
+//    x.setAttribute("style", "width: 20px;height: 20px");
+//    x.addEventListener("click", function () {
+//        garbageFunc(item, map, planes);
+//    });
+//    cell4.appendChild(x);
+//    //<td><input type="button" value="Delete Row" onclick="SomeDeleteRowFunction()"></td>
 
-}
+//}
 
 
 function rowListener(item, row, planes) {
