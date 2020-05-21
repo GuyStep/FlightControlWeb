@@ -1,4 +1,6 @@
-﻿let group = L.layerGroup();
+﻿let previousMarkedAirplane = null;
+let previousMarkedRow = null;
+let group = L.layerGroup();
 let polyline;
 let markedMarkerIcon = L.icon({
     iconUrl: '/Images/planeIconSelected.png',
@@ -7,7 +9,6 @@ let markedMarkerIcon = L.icon({
     popupAnchor: [-3, -76] // point from which the popup should open relative to the iconAnchor
 });
 
-
 let markerIcon = L.icon({
     iconUrl: '/Images/planeIcon.png',
     iconSize: [50, 50], // size of the icon
@@ -15,13 +16,12 @@ let markerIcon = L.icon({
     popupAnchor: [-3, -76] // point from which the popup should open relative to the iconAnchor
 });
 
-
 $(document).ready(function () {
     let map = createMap();
     group.addTo(map);
     map.on('click', function () {
-        group.clearLayers();
         deleteFlightDetails()
+        group.clearLayers();
 
         //switch all markers icons' to non-marked icon
         map.eachLayer(function (layer) {
@@ -32,7 +32,6 @@ $(document).ready(function () {
     });
     getFlightsFromServer(map, polyline);
 })
-
 
 function getFlightsFromServer(map, polyline) {
     const planesDictionary = new Map();
@@ -51,7 +50,6 @@ function getFlightsFromServer(map, polyline) {
         });
     }, 1000);
 }
-
 
 function handleFlights(jdata, map, planesDictionary, markerIcon, polyline) {
     jdata.forEach(function (airplane, i) {
@@ -82,77 +80,80 @@ function handleFlights(jdata, map, planesDictionary, markerIcon, polyline) {
 
 
 }
+
 function errorCallback() {
     alert("Error");
 }
 
-function addFlightToFlightsTable(item, map, planes) {
+function addFlightToFlightsTable(airplaneItem, map, planesDictionary) {
     let tableRef = document.getElementById("myFlightsTable").getElementsByTagName('tbody')[0];
     let row = tableRef.insertRow();
 
     row.addEventListener("click", function (e) {
-        rowListener(item, row, planes);
-    });
-    row.setAttribute("id", item.flight_id.toString());
-    row.insertCell(0).innerHTML = item.flight_id;
-    row.insertCell(1).innerHTML = item.company_name;
-    row.insertCell(2).innerHTML = item.date_time;
+        flightsRowOnClick(airplaneItem, row, planesDictionary);
+    }, true);
+    row.setAttribute("id", airplaneItem.flight_id.toString());
+    row.insertCell(0).innerHTML = airplaneItem.flight_id;
+    row.insertCell(1).innerHTML = airplaneItem.company_name;
     let removalButton = document.createElement("INPUT");
     removalButton.setAttribute("type", "image");
     removalButton.setAttribute("src", "Images/trash.png");
-    removalButton.setAttribute("style", "width: 17px;height: 20px");
+    removalButton.setAttribute("style", "width: 17px; height: 20px");
     removalButton.addEventListener("click", function () {
-        removeFlight(item, map, planes); });
-    row.insertCell(3).appendChild(removalButton);
+        removeFlight(airplaneItem, map, planesDictionary); }, false );
+    row.insertCell(2).appendChild(removalButton);
 }
 
-
-function rowListener(item, row, planes) {
-    updateDetails(item);
+function flightsRowOnClick(airplaneItem, row, planesDictionary) {
+    showFlightPlan(airplaneItem);
     markRow(row);
-    //locate the the the marker with same ID, mark it and show the polyline
-    for (const k of planes.keys()) {
-        if (k.toString() === item.flight_id) {
-            let marker = planes.get(k);
-            marker.setIcon(markedMarkerIcon);
-        }
-        else {
-            let marker = planes.get(k);
-            marker.setIcon(markerIcon);
-        }
+    let marker = planesDictionary.get(airplaneItem.flight_id);
+    marker.setIcon(markedMarkerIcon);
+    if (previousMarkedAirplane && previousMarkedAirplane.flight_id.localeCompare(airplaneItem.flight_id)) {
+        let prevMark = planesDictionary.get(previousMarkedAirplane.flight_id)
+        prevMark.setIcon(markerIcon);
     }
-    //polyline
-    //getFlightPlanByItem(item);
-
+    previousMarkedAirplane = airplaneItem;
 }
 
-
-function markRow(row) {
-    var tds = document.querySelectorAll('#myFlightsTable tbody tr'), i;
-    //delete mark from other rows in myFlightsTable
-    for (i = 0; i < tds.length; ++i) {
-        tds[i].classList.remove("bg-primary");
+function markRow(row) { //Marks the row was clicked (or matching plane was clicked)
+    row.classList.add("bg-primary"); //Mark the new row
+    if (previousMarkedRow) {
+        previousMarkedRow.classList.remove("bg-primary"); //Unmark the previous row
     }
-    var tds = document.querySelectorAll('#externalFlightsTable tbody tr'), i;
-    //delete mark from other rows in externalFlightsTable
-    for (i = 0; i < tds.length; ++i) {
-        tds[i].classList.remove("bg-primary");
-    }
-    // mark current row
-    row.classList.add("bg-primary");
+    previousMarkedRow = row; 
 }
 
+function showFlightPlan(item) { //Show details of marked flight in the bottom table
+    let td = document.getElementById("flight_details");
+    let tr = td.rows[0];
+    tr.id = item.flight_id;
+    document.getElementById("flightID").textContent = item.flight_id;
+    document.getElementById("Company_name").textContent = item.company_name;
+    document.getElementById("Latitude").textContent = item.latitude;
+    document.getElementById("Longitude").textContent = item.longitude;
+    document.getElementById("Passengers").textContent = item.passengers;
+    document.getElementById("Date_time").textContent = item.date_time;
+    document.getElementById("Is_external").textContent = item.is_external;
+}
 
-function removeFlight(item, map, planes) {
+function removeFlight(airplaneItem, map, planesDictionary) {
     // event.target will be the input element.
     let td = event.target.parentNode;
     let tr = td.parentNode; // the row to be removed
-    tr.parentNode.removeChild(tr);
+    td.parentNode.parentNode.removeChild(tr);
+
+
+    //delete filght details if it was presed
+    deleteFlightDetails(airplaneItem.flight_id);
+
+
     //let trId = tr.id;
     //delete flight from database if its a local flight.
-    if (!item.is_external) {
+
+    if (!airplaneItem.is_external) {
         let url = "/api/Flights/"
-        url = url.concat(item.flight_id);
+        url = url.concat(airplaneItem.flight_id);
         $.ajax({
             type: "DELETE",
             url: url,
@@ -164,10 +165,15 @@ function removeFlight(item, map, planes) {
     }
 
     //delete the marker from the map.
-    deleteMarker(item, map, planes);
+    deleteMarker(airplaneItem, map, planesDictionary);
 
-    //delete filght details if it was presed
-    deleteFlightDetails(item.flight_id);
+
+    //let row = document.getElementById(previousMarkedAirplane.flight_id);
+    ////.getElementsByTagName('tbody')[0]
+
+    //flightsRowOnClick(previousMarkedAirplane, row, planesDictionary);
+
+
 }
 
 //get a flight and delete it from the markers(planes) list if its there.
@@ -197,21 +203,21 @@ function endOfFlight(item, map, planes) {
 function deleteFlightDetails(flight_id) {
     let flightId = document.getElementById("flightID").textContent;
     if (flight_id === flightId) {
-        document.getElementById("flightID").textContent = "";
-        document.getElementById("Company_name").textContent = "";
-        document.getElementById("Latitude").textContent = "";
-        document.getElementById("Longitude").textContent = "";
-        document.getElementById("Passengers").textContent = "";
-        document.getElementById("Date_time").textContent = "";
-        document.getElementById("Is_external").textContent = "";
-        group.clearLayers();
+        document.getElementById("flightID").textContent = " ";
+        document.getElementById("Company_name").textContent = " ";
+        document.getElementById("Latitude").textContent = " ";
+        document.getElementById("Longitude").textContent = " ";
+        document.getElementById("Passengers").textContent = " ";
+        document.getElementById("Date_time").textContent = " ";
+        document.getElementById("Is_external").textContent = " ";
+        //group.clearLayers();
 
     }
 }
 
 
 function onAirplaneClick(item, map, polyline, e) {
-    updateDetails(item);
+    showFlightPlan(item);
 
     var tds = document.querySelectorAll('#myFlightsTable tbody tr'), i;
     //delete mark from other rows in myFlightsTable
@@ -241,6 +247,8 @@ function onAirplaneClick(item, map, polyline, e) {
     getFlightPlanByItem(item);
 }
 
+
+
 function getFlightPlanByItem(item) {
     //GET flightPlan/flight_ID
     let url = "/api/FlightPlans/"
@@ -258,18 +266,7 @@ function getFlightPlanByItem(item) {
     });
 }
 
-function updateDetails(item) {
-    let td = document.getElementById("flight_details");
-    let tr = td.rows[0];
-    tr.id = item.flight_id;
-    document.getElementById("flightID").textContent = item.flight_id;
-    document.getElementById("Company_name").textContent = item.company_name;
-    document.getElementById("Latitude").textContent = item.latitude;
-    document.getElementById("Longitude").textContent = item.longitude;
-    document.getElementById("Passengers").textContent = item.passengers;
-    document.getElementById("Date_time").textContent = item.date_time;
-    document.getElementById("Is_external").textContent = item.is_external;
-}
+
 
 
 
