@@ -25,6 +25,7 @@
         * element that contains the map. */
         #map {
             height: 300px;
+            border-radius: 10px;
         }
 
         .overlay-div {
@@ -146,10 +147,10 @@
             <div class="col-lg-8">
                 <div id="map" class="m-3"></div>
                 <script>
-                    var map = L.map('map').setView([0, 0], 1);
-                    L.tileLayer('https://api.maptiler.com/maps/pastel/256/{z}/{x}/{y}.png?key=A8iBpAvXtqYbrn2snY4K', {
-                        attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
-                    }).addTo(map);
+                    //var map = L.map('map').setView([0, 0], 1);
+                    //L.tileLayer('https://api.maptiler.com/maps/pastel/256/{z}/{x}/{y}.png?key=A8iBpAvXtqYbrn2snY4K', {
+                    //    attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
+                    //}).addTo(map);
                 </script>
                 <div class="row" style="height:28vh">
                     <div class="table table-light" id="tableCol" style="padding:15px; margin:15px;padding-top:0px;margin-top:0px; border-style: hidden;">

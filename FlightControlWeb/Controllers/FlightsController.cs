@@ -94,21 +94,6 @@ namespace FlightControlWeb.Controllers
                         }
                     }
                 }*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             }
                 
         return flights;
