@@ -52,6 +52,8 @@ namespace FlightControlWeb.Controllers
 
             var loc = await _context.first_location.ToListAsync();
             var seg = await _context.segments.ToListAsync();
+            seg = seg.OrderBy(o => o.key).ToList();
+
 
             flightPlan.initial_location = loc.Where(a => a.flight_id.CompareTo(id) == 0).First();
             flightPlan.segments = seg.Where(a => a.flight_id.CompareTo(id) == 0).ToList();

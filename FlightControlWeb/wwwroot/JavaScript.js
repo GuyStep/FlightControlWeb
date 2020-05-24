@@ -1,13 +1,16 @@
 ﻿let previousMarkedAirplane = null;
 let previousMarkedRow = null;
-let group = L.layerGroup();
 let polyline;
+let path = [];
+let group = L.layerGroup();
+const pathsDictionary = new Map();
 let markedMarkerIcon = L.icon({
     iconUrl: '/Images/planeIconSelected.png',
     iconSize: [50, 50], // size of the icon
     iconAnchor: [50, 50], // point of the icon which will correspond to marker's location
     popupAnchor: [-3, -76] // point from which the popup should open relative to the iconAnchor
 });
+let map;
 
 let markerIcon = L.icon({
     iconUrl: '/Images/planeIcon.png',
@@ -17,11 +20,19 @@ let markerIcon = L.icon({
 });
 
 $(document).ready(function () {
-    let map = createMap();
-    group.addTo(map);
+    map = createMap();
+    //group.addTo(map);
+    //var polylinePoints = [
+    //    [37.781814, -122.404740],
+    //    [37.781719, -122.404637],
+    //    [37.781489, -122.404949],
+    //    [37.780704, -122.403945],
+    //    [37.780012, -122.404827]
+    //];
+    //var path1 = L.polyline(polylinePoints).addTo(map);
     map.on('click', function () {
-        deleteFlightDetails()
-        group.clearLayers();
+        map.removeLayer(path[0]);
+        removeFlightDetails()
 
         //switch all markers icons' to non-marked icon
         map.eachLayer(function (layer) {
@@ -31,7 +42,6 @@ $(document).ready(function () {
         });
     });
     getFlightsFromServer(map, polyline);
-
 })
 
 function getFlightsFromServer(map, polyline) {
@@ -45,15 +55,21 @@ function getFlightsFromServer(map, polyline) {
             url: url,
             dataType: 'json',
             success: function (jdata) {
-                handleFlights(jdata, map, planesDictionary, markerIcon, polyline);
+                handleFlights(jdata, map, planesDictionary, pathsDictionary, markerIcon, polyline);
             },
             error: errorCallback
         });
     }, 1000);
 }
 
-function handleFlights(jdata, map, planesDictionary, markerIcon, polyline) {
-    jdata.forEach(function (airplane, i) { //Traverse all the flights from server
+function handleFlights(jdata, map, planesDictionary, pathsDictionary, markerIcon, polyline) {
+    jdata.forEach(function (airplane, i) {
+
+        if (!pathsDictionary.has(airplane.flight_id)) {
+            let currentFlight = getFlightPlanByItem(airplane.flight_id);
+            
+        }
+
         let lat = parseFloat(airplane.latitude);
         let long = parseFloat(airplane.longitude);
         if (planesDictionary.has(airplane.flight_id)) { //Check if the flight exists in dictionary
@@ -62,7 +78,7 @@ function handleFlights(jdata, map, planesDictionary, markerIcon, polyline) {
         } else { //Add a flight and it's icon to the dictionary
             let marker = L.marker([lat, long], { icon: markerIcon }).addTo(map)
                 .openPopup().on('click', function (e) {
-                    onAirplaneClick(airplane, map, polyline, e);
+                    clickOnAirplane(airplane, map, polyline, e);
                 }); 
             marker.id = airplane.flight_id;
             planesDictionary.set(airplane.flight_id, marker);
@@ -100,35 +116,33 @@ function addFlightToFlightsTable(airplaneItem, map, planesDictionary) {
     removalButton.setAttribute("style", "width: 17px; height: 20px");
         
     row.addEventListener("click", function (e) {
-        let eleID = e.target.id
-        let notRemoveClicked = eleID === "remBut" + airplaneItem.flight_id;
+        //let eleID = e.target.id
+        //let notRemoveClicked = eleID === "remBut" + airplaneItem.flight_id;
         //let notRemoveClicked = elementType.compareLocale("image")
-        if (!notRemoveClicked) {
-            flightsRowOnClick(airplaneItem, row, planesDictionary);
-        }
-
-
-
-    }, true);
+        //if (!notRemoveClicked) {
+            clickOnFlightRow(airplaneItem, row, planesDictionary);
+        //}
+    });
     row.setAttribute("id", airplaneItem.flight_id.toString());
     row.insertCell(0).innerHTML = airplaneItem.flight_id;
     row.insertCell(1).innerHTML = airplaneItem.company_name;
     removalButton.addEventListener("click", function () {
         removeFlight(airplaneItem, map, planesDictionary);
-    }, false);
+    });
     row.insertCell(2).appendChild(removalButton);
 }
 
-function flightsRowOnClick(airplaneItem, row, planesDictionary) {
+function clickOnFlightRow(airplaneItem, row, planesDictionary) {
     showFlightPlan(airplaneItem);
+    showPath(airplaneItem.flight_id, map);
     markRow(row);
     let marker = planesDictionary.get(airplaneItem.flight_id);
     marker.setIcon(markedMarkerIcon);
-    if (previousMarkedAirplane && previousMarkedAirplane.flight_id.localeCompare(airplaneItem.flight_id)) {
-        let prevMark = planesDictionary.get(previousMarkedAirplane.flight_id)
+    if (previousMarkedAirplane && previousMarkedAirplane.localeCompare(airplaneItem.flight_id)) {
+        let prevMark = planesDictionary.get(previousMarkedAirplane)
         prevMark.setIcon(markerIcon);
     }
-    previousMarkedAirplane = airplaneItem;
+    previousMarkedAirplane = airplaneItem.flight_id;
 }
 
 function markRow(row) { //Marks the row was clicked (or matching plane was clicked)
@@ -157,11 +171,15 @@ function removeFlight(airplaneItem, map, planesDictionary) {
     let td = event.target.parentNode;
     let tr = td.parentNode; // the row to be removed
     td.parentNode.parentNode.removeChild(tr);
-
-
+    if (airplaneItem.flight_id === path[1]) {
+        map.removeLayer(path[0]);
+    }
     //delete filght details if it was presed
-    deleteFlightDetails(airplaneItem.flight_id);
+    removeFlightDetails(airplaneItem.flight_id);
 
+
+    //delete the marker from the map.
+    deleteMarker(airplaneItem, map, planesDictionary);
 
     //let trId = tr.id;
     //delete flight from database if its a local flight.
@@ -179,8 +197,6 @@ function removeFlight(airplaneItem, map, planesDictionary) {
         });
     }
 
-    //delete the marker from the map.
-    deleteMarker(airplaneItem, map, planesDictionary);
 
 
     //let row = document.getElementById(previousMarkedAirplane.flight_id);
@@ -203,7 +219,7 @@ function deleteMarker(item, map, planes) {
         }
 }
 
-function endOfFlight(item, map, planes) {
+function removeEndedFlight(item, map, planes) {
     // event.target will be the input element.
     let td = event.target.parentNode;
     let tr = td.parentNode; // the row to be removed
@@ -212,10 +228,10 @@ function endOfFlight(item, map, planes) {
     deleteMarker(item, map, planes);
 
     //delete filght details if it was presed
-    deleteFlightDetails();
+    removeFlightDetails();
 }
 //if the flight details was shown
-function deleteFlightDetails(flight_id) {
+function removeFlightDetails(flight_id) {
     let flightId = document.getElementById("flightID").textContent;
     if (flight_id === flightId) {
         document.getElementById("flightID").textContent = " ";
@@ -231,9 +247,9 @@ function deleteFlightDetails(flight_id) {
 }
 
 
-function onAirplaneClick(item, map, polyline, e) {
+function clickOnAirplane(item, map, polyline, e) {
     showFlightPlan(item);
-
+    showPath(item.flight_id, map);
     var tds = document.querySelectorAll('#myFlightsTable tbody tr'), i;
     //delete mark from other rows in myFlightsTable
     let row;
@@ -259,73 +275,36 @@ function onAirplaneClick(item, map, polyline, e) {
     //mark current marker with marked-icon
     var layer = e.target;
     layer.setIcon(markedMarkerIcon);
+    previousMarkedAirplane = layer.id;
     //getFlightPlanByItem(item);
 }
 
 
 
-function getFlightPlanByItem(item) {
-    //GET flightPlan/flight_ID
-    let url = "/api/FlightPlans/"
-    url = url.concat(item.flight_id);
-    $.ajax({
-        type: "GET",
-        url: url,
-        dataType: 'json',
-        success: function (jdata) {
-            createPolyline(jdata, map, polyline);
-        },
-        error: function () {
-            alert("get error");
-        }
-    });
+async function getFlightPlanByItem(item) {
+    let url = "/api/FlightPlans/" + item;
+    let jdata = await fetch(url);
+    let airplaneData = await jdata.json();
+    console.log(airplaneData);
+    createPath(airplaneData, map, pathsDictionary, polyline);
+    return airplaneData;
 }
 
-
-
-
-
-function createPaths(jdata, map, polyline) {
-    const pathByIdDictionary = new Map();
-
-    jdata.forEach(function (airplane) { //Loop over all the flights from server
-        let singleAirplanePathArray = []
-        let lat = parseFloat(airplane.latitude);
-        let long = parseFloat(airplane.longitude);
-        singleAirplanePathArray.push([lat, long]); //Add start location
-        airplane.segments.forEach(function (segment) { //Loop over the segments and add them to array
-            singleAirplanePathArray.push([segment.latitude, segment.longitude]);
-        });
-        pathByIdDictionary.set(airplane.flight_id, singleAirplanePathArray); //Add fligt:path to dictionary
-    })
-
-    let segments = jdata.segments;
-    let longitude;
-    let latitude;
-    let location
-    let polylineArray = [];
-    for (let i = 0; i < segments.length; i++) {
-        longitude = segments[i]["longitude"];
-        latitude = segments[i]["latitude"];
-        location = [latitude, longitude];
-        polylineArray.push(location);
-    }
-    group.clearLayers();
-    polyline = L.polyline(polylineArray, { color: 'red' }).addTo(group);
-
-    /////////////////////////////////////////////////////////////////////////
-    var polylinePoints = [
-        [38.781814, -121.404740],
-        [39.781719, -122.404637],
-        [40.781489, -121.404949],
-        [41.780704, -122.403945],
-        [42.780012, -121.404827]
-    ];
-
-    var polyline = L.polyline(polylinePoints).addTo(map); 
-
-
-}
+//function createPolyline(jdata, map, polyline) {
+//    let segments = jdata.segments;
+//    let longitude;
+//    let latitude;
+//    let location
+//    let polylineArray = [];
+//    for (let i = 0; i < segments.length; i++) {
+//        longitude = segments[i]["longitude"];
+//        latitude = segments[i]["latitude"];
+//        location = [latitude, longitude];
+//        polylineArray.push(location);
+//    }
+//    group.clearLayers();
+//    polyline = L.polyline(polylineArray, { color: 'red' }).addTo(group);
+//}
 
 function createMap() {
     let map = L.map('map').setView([51.505, -0.09], 3);
@@ -334,3 +313,64 @@ function createMap() {
     }).addTo(map);
     return map;
 }
+
+function createPath(airplane, map, pathsDictionary, polyline) {
+
+    //jdata.forEach(function (airplane) { //Loop over all the flights from server
+    let singleAirplanePathArray = []
+    let lat = parseFloat(airplane.latitude);
+    let long = parseFloat(airplane.longitude);
+    singleAirplanePathArray.push([lat, long]); //Add start location
+    for (let i = 0; i < airplane.segments.length; i++) {
+    //airplane.segments.forEach(function (segment) { //Loop over the segments and add them to array
+        singleAirplanePathArray.push([parseFloat(airplane.segments[i].latitude), parseFloat(airplane.segments[i].longitude)]);
+    }
+    pathsDictionary.set(airplane.initial_location.flight_id, singleAirplanePathArray); //Add fligt:path to dictionary
+    //});
+
+    //let segments = jdata.segments;
+    //let longitude;
+    //let latitude;
+    //let location
+    //let polylineArray = [];
+    //for (let i = 0; i < segments.length; i++) {
+    //    longitude = segments[i]["longitude"];
+    //    latitude = segments[i]["latitude"];
+    //    location = [latitude, longitude];
+    //    polylineArray.push(location);
+    //}
+    //group.clearLayers();
+    //polyline = L.polyline(polylineArray, { color: 'red' }).addTo(group);
+
+    ///////////////////////////////////////////////////////////////////////////
+    //var polylinePoints = [
+    //    [38.781814, -121.404740],
+    //    [39.781719, -122.404637],
+    //    [40.781489, -121.404949],
+    //    [41.780704, -122.403945],
+    //    [42.780012, -121.404827]
+    //];
+
+    //var polyline = L.polyline(polylinePoints).addTo(map);
+
+
+}
+
+function showPath(flight_id, map){
+    //group.addTo(map);
+    let flightSegments = pathsDictionary.get(flight_id);
+    if (path[0]) {
+        map.removeLayer(path[0]);
+    }
+    path[0] = L.polyline(flightSegments);
+    path[1] = flight_id;
+    map.addLayer(path[0]);
+}
+
+1. Deletion of paths
+2. Removing from dectionaries after delete
+3. The EVENT bug(flight details and path)
+
+4. Plane Position
+5. Servers
+6. Tests
