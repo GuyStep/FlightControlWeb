@@ -31,6 +31,7 @@ $(document).ready(function () {
         });
     });
     getFlightsFromServer(map, polyline);
+
 })
 
 function getFlightsFromServer(map, polyline) {
@@ -52,7 +53,7 @@ function getFlightsFromServer(map, polyline) {
 }
 
 function handleFlights(jdata, map, planesDictionary, markerIcon, polyline) {
-    jdata.forEach(function (airplane, i) {
+    jdata.forEach(function (airplane, i) { //Traverse all the flights from server
         let lat = parseFloat(airplane.latitude);
         let long = parseFloat(airplane.longitude);
         if (planesDictionary.has(airplane.flight_id)) { //Check if the flight exists in dictionary
@@ -87,20 +88,34 @@ function errorCallback() {
 
 function addFlightToFlightsTable(airplaneItem, map, planesDictionary) {
     let tableRef = document.getElementById("myFlightsTable").getElementsByTagName('tbody')[0];
-    let row = tableRef.insertRow();
 
+
+    let row = tableRef.insertRow();
+    row.setAttribute("id", "row" + airplaneItem.flightId);
+
+    let removalButton = document.createElement("INPUT");
+    removalButton.setAttribute("type", "image");
+    removalButton.setAttribute("id", "remBut" + airplaneItem.flight_id);
+    removalButton.setAttribute("src", "Images/trash.png");
+    removalButton.setAttribute("style", "width: 17px; height: 20px");
+        
     row.addEventListener("click", function (e) {
-        flightsRowOnClick(airplaneItem, row, planesDictionary);
+        let eleID = e.target.id
+        let notRemoveClicked = eleID === "remBut" + airplaneItem.flight_id;
+        //let notRemoveClicked = elementType.compareLocale("image")
+        if (!notRemoveClicked) {
+            flightsRowOnClick(airplaneItem, row, planesDictionary);
+        }
+
+
+
     }, true);
     row.setAttribute("id", airplaneItem.flight_id.toString());
     row.insertCell(0).innerHTML = airplaneItem.flight_id;
     row.insertCell(1).innerHTML = airplaneItem.company_name;
-    let removalButton = document.createElement("INPUT");
-    removalButton.setAttribute("type", "image");
-    removalButton.setAttribute("src", "Images/trash.png");
-    removalButton.setAttribute("style", "width: 17px; height: 20px");
     removalButton.addEventListener("click", function () {
-        removeFlight(airplaneItem, map, planesDictionary); }, false );
+        removeFlight(airplaneItem, map, planesDictionary);
+    }, false);
     row.insertCell(2).appendChild(removalButton);
 }
 
@@ -244,7 +259,7 @@ function onAirplaneClick(item, map, polyline, e) {
     //mark current marker with marked-icon
     var layer = e.target;
     layer.setIcon(markedMarkerIcon);
-    getFlightPlanByItem(item);
+    //getFlightPlanByItem(item);
 }
 
 
@@ -270,7 +285,20 @@ function getFlightPlanByItem(item) {
 
 
 
-function createPolyline(jdata, map, polyline) {
+function createPaths(jdata, map, polyline) {
+    const pathByIdDictionary = new Map();
+
+    jdata.forEach(function (airplane) { //Loop over all the flights from server
+        let singleAirplanePathArray = []
+        let lat = parseFloat(airplane.latitude);
+        let long = parseFloat(airplane.longitude);
+        singleAirplanePathArray.push([lat, long]); //Add start location
+        airplane.segments.forEach(function (segment) { //Loop over the segments and add them to array
+            singleAirplanePathArray.push([segment.latitude, segment.longitude]);
+        });
+        pathByIdDictionary.set(airplane.flight_id, singleAirplanePathArray); //Add fligt:path to dictionary
+    })
+
     let segments = jdata.segments;
     let longitude;
     let latitude;
@@ -284,6 +312,19 @@ function createPolyline(jdata, map, polyline) {
     }
     group.clearLayers();
     polyline = L.polyline(polylineArray, { color: 'red' }).addTo(group);
+
+    /////////////////////////////////////////////////////////////////////////
+    var polylinePoints = [
+        [38.781814, -121.404740],
+        [39.781719, -122.404637],
+        [40.781489, -121.404949],
+        [41.780704, -122.403945],
+        [42.780012, -121.404827]
+    ];
+
+    var polyline = L.polyline(polylinePoints).addTo(map); 
+
+
 }
 
 function createMap() {
