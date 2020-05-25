@@ -51,20 +51,21 @@ namespace FlightControlWeb.Controllers
                 element.initial_location = loc.Where(a => a.flight_id.CompareTo(id) == 0).First();
                 element.segments = seg.Where(a => a.flight_id.CompareTo(id) == 0).ToList();
 
-                DateTime start = DateTimeOffset.Parse(element.initial_location.date_time).UtcDateTime;
-                if (DateTime.Compare(relative, start) < 0)
+                DateTime takeOffTime = DateTimeOffset.Parse(element.initial_location.date_time).UtcDateTime;
+                if (DateTime.Compare(relative, takeOffTime) < 0)
                 {
                     continue;
                 }
                 Flight fl = new Flight();
                 double startLat = element.initial_location.latitude;
                 double startLong = element.initial_location.longitude;
-                // run over segments
-                foreach (Segment s in element.segments)
+
+                DateTime saveStart = takeOffTime;
+                DateTime test = takeOffTime;
+                foreach (Segment segment in element.segments)
                 {
-                    DateTime saveStart = start;
-                    DateTime test = start.AddSeconds(s.timespan_seconds);
-                    if (DateTime.Compare(relative, start) >= 0 &&
+                    test = test.AddSeconds(segment.timespan_seconds);
+                    if (DateTime.Compare(relative, takeOffTime) >= 0 &&
                         DateTime.Compare(relative, test) <= 0)
                     {
                         fl.flight_id = element.flight_id;

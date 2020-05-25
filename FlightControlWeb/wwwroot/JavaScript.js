@@ -4,18 +4,20 @@ let polyline;
 let path = [];
 let group = L.layerGroup();
 const pathsDictionary = new Map();
+const segmentsDictionary = new Map();
 let markedMarkerIcon = L.icon({
     iconUrl: '/Images/planeIconSelected.png',
     iconSize: [50, 50], // size of the icon
-    iconAnchor: [50, 50], // point of the icon which will correspond to marker's location
+    iconAnchor: [25,25], // point of the icon which will correspond to marker's location
     popupAnchor: [-3, -76] // point from which the popup should open relative to the iconAnchor
 });
 let map;
 
+
 let markerIcon = L.icon({
     iconUrl: '/Images/planeIcon.png',
     iconSize: [50, 50], // size of the icon
-    iconAnchor: [50, 50], // point of the icon which will correspond to marker's location
+    iconAnchor: [25, 25], // point of the icon which will correspond to marker's location
     popupAnchor: [-3, -76] // point from which the popup should open relative to the iconAnchor
 });
 
@@ -33,6 +35,10 @@ $(document).ready(function () {
     map.on('click', function () {
         map.removeLayer(path[0]);
         removeFlightDetails()
+        if (previousMarkedRow) {
+            previousMarkedRow.classList.remove("bg-primary"); //Unmark the marked row
+        }
+
 
         //switch all markers icons' to non-marked icon
         map.eachLayer(function (layer) {
@@ -70,13 +76,14 @@ function handleFlights(jdata, map, planesDictionary, pathsDictionary, markerIcon
             
         }
 
-        let lat = parseFloat(airplane.latitude);
-        let long = parseFloat(airplane.longitude);
+        let currentLocation = calculateLocation(airplane);
+        //let lat = parseFloat(airplane.latitude);
+        //let long = parseFloat(airplane.longitude);
         if (planesDictionary.has(airplane.flight_id)) { //Check if the flight exists in dictionary
             let flightMarker = planesDictionary.get(airplane.flight_id);
-            flightMarker.setLatLng([lat, long]);
+            flightMarker.setLatLng(currentLocation);
         } else { //Add a flight and it's icon to the dictionary
-            let marker = L.marker([lat, long], { icon: markerIcon }).addTo(map)
+            let marker = L.marker(currentLocation, { icon: markerIcon }).addTo(map)
                 .openPopup().on('click', function (e) {
                     clickOnAirplane(airplane, map, polyline, e);
                 }); 
@@ -96,6 +103,39 @@ function handleFlights(jdata, map, planesDictionary, pathsDictionary, markerIcon
     });
 
 
+}
+
+function calculateLocation(airplane) {
+    var date = new Date().toISOString();
+    let date1 = new Date(date); 
+    let date2 = new Date(airplane.date_time);
+    var difference = parseFloat(date1 - date2)/1000; //How many seconds past since plane took off
+    let sumCurrentSegmentSeconds = 0;
+    let currentSegments = segmentsDictionary.get(airplane.flight_id);
+
+    for (let i = 0; i < currentSegments.length; i++){
+        let sumPreviousSegmentSeconds = sumCurrentSegmentSeconds;
+        sumCurrentSegmentSeconds += currentSegments[i].timespan_seconds;
+        let inSegmentDiffernce = difference - sumPreviousSegmentSeconds;
+        let inSegmentDifferncePercent = inSegmentDiffernce / currentSegments[i].timespan_seconds;
+        if (sumCurrentSegmentSeconds >= difference) {
+            let startLat;
+            let startLong; 
+            let finishLat = currentSegments[i].latitude;
+            let finishLong = currentSegments[i].longitude;
+            if (!i) {
+                startLat = airplane.latitude;
+                startLong = airplane.longitude;
+            }
+            else {
+                startLat = currentSegments[i-1].latitude;
+                startLong = currentSegments[i-1].longitude;
+            }
+            let currentLat = startLat + (finishLat - startLat) * inSegmentDifferncePercent;
+            let currentLong = startLong + (finishLong - startLong) * inSegmentDifferncePercent;
+            return [currentLat, currentLong];
+        }
+    }
 }
 
 function errorCallback() {
@@ -146,12 +186,13 @@ function clickOnFlightRow(airplaneItem, row, planesDictionary) {
 }
 
 function markRow(row) { //Marks the row was clicked (or matching plane was clicked)
-    row.classList.add("bg-primary"); //Mark the new row
     if (previousMarkedRow) {
         previousMarkedRow.classList.remove("bg-primary"); //Unmark the previous row
     }
+    row.classList.add("bg-primary"); //Mark the new row
     previousMarkedRow = row; 
 }
+
 
 function showFlightPlan(item) { //Show details of marked flight in the bottom table
     let td = document.getElementById("flight_details");
@@ -292,26 +333,15 @@ async function getFlightPlanByItem(item) {
     let url = "/api/FlightPlans/" + item;
     let jdata = await fetch(url);
     let airplaneData = await jdata.json();
-    console.log(airplaneData);
+    //console.log(airplaneData);
     createPath(airplaneData, map, pathsDictionary, polyline);
+    createSegmentsList(airplaneData);
     return airplaneData;
 }
 
-//function createPolyline(jdata, map, polyline) {
-//    let segments = jdata.segments;
-//    let longitude;
-//    let latitude;
-//    let location
-//    let polylineArray = [];
-//    for (let i = 0; i < segments.length; i++) {
-//        longitude = segments[i]["longitude"];
-//        latitude = segments[i]["latitude"];
-//        location = [latitude, longitude];
-//        polylineArray.push(location);
-//    }
-//    group.clearLayers();
-//    polyline = L.polyline(polylineArray, { color: 'red' }).addTo(group);
-//}
+function createSegmentsList(airplane) {
+    segmentsDictionary.set(airplane.initial_location.flight_id, airplane.segments);
+}
 
 function createMap() {
     let map = L.map('map').setView([51.505, -0.09], 3);
@@ -356,3 +386,4 @@ function showPath(flight_id, map){
 //6. Tests
 //7. Ip windoow
 //8. Servers Window
+//9. Raise errors
