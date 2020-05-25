@@ -178,6 +178,13 @@ function removeFlight(airplaneItem, map, planesDictionary) {
     removeFlightDetails(airplaneItem.flight_id);
 
 
+    if (airplaneItem.flight_id === path[1]) {
+        map.removeLayer(path[0]);
+        path[0] = null;
+        pathsDictionary.delete(airplaneItem.flight_id);
+    }
+
+
     //delete the marker from the map.
     deleteMarker(airplaneItem, map, planesDictionary);
 
@@ -327,33 +334,6 @@ function createPath(airplane, map, pathsDictionary, polyline) {
     }
     pathsDictionary.set(airplane.initial_location.flight_id, singleAirplanePathArray); //Add fligt:path to dictionary
     //});
-
-    //let segments = jdata.segments;
-    //let longitude;
-    //let latitude;
-    //let location
-    //let polylineArray = [];
-    //for (let i = 0; i < segments.length; i++) {
-    //    longitude = segments[i]["longitude"];
-    //    latitude = segments[i]["latitude"];
-    //    location = [latitude, longitude];
-    //    polylineArray.push(location);
-    //}
-    //group.clearLayers();
-    //polyline = L.polyline(polylineArray, { color: 'red' }).addTo(group);
-
-    ///////////////////////////////////////////////////////////////////////////
-    //var polylinePoints = [
-    //    [38.781814, -121.404740],
-    //    [39.781719, -122.404637],
-    //    [40.781489, -121.404949],
-    //    [41.780704, -122.403945],
-    //    [42.780012, -121.404827]
-    //];
-
-    //var polyline = L.polyline(polylinePoints).addTo(map);
-
-
 }
 
 function showPath(flight_id, map){
@@ -367,10 +347,12 @@ function showPath(flight_id, map){
     map.addLayer(path[0]);
 }
 
-1. Deletion of paths
-2. Removing from dectionaries after delete
-3. The EVENT bug(flight details and path)
+//1. Deletion of paths
+//2. Removing from dectionaries after delete
+//3. The EVENT bug(flight details and path)
 
-4. Plane Position
-5. Servers
-6. Tests
+//4. Plane Position
+//5. Servers
+//6. Tests
+//7. Ip windoow
+//8. Servers Window
