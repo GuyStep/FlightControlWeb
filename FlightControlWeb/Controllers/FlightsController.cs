@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using FlightControlWeb.Models;
+using System.Net;
+using System.IO;
+using Newtonsoft.Json;
 
 namespace FlightControlWeb.Controllers
 {
@@ -79,28 +82,93 @@ namespace FlightControlWeb.Controllers
                         break;
                     }
                 }
-               /* if (syncAll)
+
+
+
+
+                    /* if (syncAll)
+                     {
+                         List<Flight> externalFlights = null;
+                         foreach (Server s in _context.Server)
+                         {
+                             string get = s.ServerURL + "api/Flights?relative_to=" + relative_to + "&syncAll=false";
+                             externalFlights = GetFlightFromSever<List<Flight>>(get);
+                             foreach (Flight f in externalFlights)
+                             {
+                                 f.Is_external = true;
+                                 _context.serverId[f.Flight_id] = s;
+                                 flights.Add(f);
+
+                             }
+                         }
+                     }*/
+                }
+            if (syncAll)
+            {
+                List<Flight> externalFlights = CreateExternalFlights(relative_to);
+                foreach (Flight exf in externalFlights)
                 {
-                    List<Flight> externalFlights = null;
-                    foreach (Server s in _context.Server)
-                    {
-                        string get = s.ServerURL + "api/Flights?relative_to=" + relative_to + "&syncAll=false";
-                        externalFlights = GetFlightFromSever<List<Flight>>(get);
-                        foreach (Flight f in externalFlights)
-                        {
-                            f.Is_external = true;
-                            _context.serverId[f.Flight_id] = s;
-                            flights.Add(f);
-
-                        }
-                    }
-                }*/
+                    flights.Add(exf);
+                }
             }
-                
-        return flights;
-    }
- 
 
+            return flights;
+    }
+
+
+
+        private List<Flight> CreateExternalFlights(string relative_to)
+        {
+            List<Flight> externalFlights = new List<Flight>();
+            foreach (Server s in _context.server)
+            {
+                relative_to = relative_to.Substring(0, 19) + 'Z';
+                string get = s.ServerURL + "/api/Flights?relative_to=" + relative_to;
+
+                try
+                {
+                    externalFlights = GetFlightFromServer<List<Flight>>(get);
+
+                }
+                catch (System.Net.WebException)
+                {
+                    continue;
+                }
+                foreach (Flight f in externalFlights)
+                {
+                    f.is_external = true;
+                    // Save the server that the current flight belongs to him.
+                    FlightPlanContext.flightServerDictiontary[f.flight_id] = s;
+                }
+            }
+            _context.SaveChanges();
+            return externalFlights;
+        }
+        public static T GetFlightFromServer<T>(string serverUrl)
+        {
+            string get = String.Format(serverUrl);
+            // Create request.
+            WebRequest request = WebRequest.Create(get);
+            request.Method = "GET";
+            HttpWebResponse response = null;
+            // Get response.
+            response = (HttpWebResponse)request.GetResponse();
+            string result = null;
+            // Get data - Json file.
+            using (Stream stream = response.GetResponseStream())
+            {
+                StreamReader sr = new StreamReader(stream);
+                result = sr.ReadToEnd();
+                sr.Close();
+            }
+            if (result == "" || result == null)
+            {
+                return default;
+            }
+            // Convert to object.
+            T externalFlights = JsonConvert.DeserializeObject<T>(result);
+            return externalFlights;
+        }
 
         // DELETE: api/Flights/5
         [HttpDelete("{id}")]

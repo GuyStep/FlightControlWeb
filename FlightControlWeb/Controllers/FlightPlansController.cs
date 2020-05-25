@@ -89,6 +89,12 @@ namespace FlightControlWeb.Controllers
 
             //SET ID
             flightPlan.flight_id = getNewId(flightPlan.company_name.ToString(), flightPlan.initial_location.date_time.ToString());
+            List<FlightPlan> fp = await _context.FlightPlan.ToListAsync();
+            var exist = fp.Where(a => a.flight_id.CompareTo(flightPlan.flight_id) == 0).ToList();
+            while (exist.Count != 0) {
+                flightPlan.flight_id = getNewId(flightPlan.company_name.ToString(), flightPlan.initial_location.date_time.ToString());
+                exist = fp.Where(a => a.flight_id.CompareTo(flightPlan.flight_id) == 0).ToList();
+            }
             flightPlan.date_time = flightPlan.initial_location.date_time;
             flightPlan.longitude = flightPlan.initial_location.longitude;
             flightPlan.latitude = flightPlan.initial_location.latitude;

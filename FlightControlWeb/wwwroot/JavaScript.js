@@ -330,7 +330,7 @@ function clickOnAirplane(item, map, polyline, e) {
 
 
 async function getFlightPlanByItem(item) {
-    let url = "/api/FlightPlans/" + item;
+    let url = "/api/FlightPlan/" + item;
     let jdata = await fetch(url);
     let airplaneData = await jdata.json();
     //console.log(airplaneData);
@@ -377,11 +377,10 @@ function showPath(flight_id, map){
     map.addLayer(path[0]);
 }
 
-//1. Deletion of paths
+
 //2. Removing from dectionaries after delete
 //3. The EVENT bug(flight details and path)
 
-//4. Plane Position
 //5. Servers
 //6. Tests
 //7. Ip windoow
