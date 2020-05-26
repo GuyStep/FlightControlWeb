@@ -106,6 +106,8 @@ namespace FlightControlWeb.Controllers
             if (syncAll)
             {
                 List<Flight> externalFlights = CreateExternalFlights(relative_to);
+                if (externalFlights == null) { 
+                }
                 foreach (Flight exf in externalFlights)
                 {
                     flights.Add(exf);
@@ -133,6 +135,10 @@ namespace FlightControlWeb.Controllers
                 catch (System.Net.WebException)
                 {
                     continue;
+                }
+                if (externalFlights == null)
+                {
+                    return externalFlights;
                 }
                 foreach (Flight f in externalFlights)
                 {
@@ -166,7 +172,15 @@ namespace FlightControlWeb.Controllers
                 return default;
             }
             // Convert to object.
-            T externalFlights = JsonConvert.DeserializeObject<T>(result);
+            T externalFlights = default(T);
+            try
+            {
+                externalFlights = JsonConvert.DeserializeObject<T>(result);
+            }
+            catch
+            {
+                return default;
+            }
             return externalFlights;
         }
 

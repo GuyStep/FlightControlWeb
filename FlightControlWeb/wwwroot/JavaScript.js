@@ -68,6 +68,16 @@ function getFlightsFromServer(map, polyline) {
     }, 1000);
 }
 
+async function getFlightPlanByItem(flight_id) {
+    let url = "/api/FlightPlan/" + flight_id;
+    let jdata = await fetch(url);
+    let airplaneData = await jdata.json();
+    //console.log(airplaneData);
+    createPath(airplaneData, map, pathsDictionary, polyline, flight_id);
+    createSegmentsList(airplaneData, flight_id);
+    return airplaneData;
+}
+
 function handleFlights(jdata, map, planesDictionary, pathsDictionary, markerIcon, polyline) {
     jdata.forEach(function (airplane, i) {
 
@@ -294,7 +304,6 @@ function removeFlightDetails(flight_id) {
     }
 }
 
-
 function clickOnAirplane(item, map, polyline, e) {
     showFlightPlan(item);
     showPath(item.flight_id, map);
@@ -327,20 +336,8 @@ function clickOnAirplane(item, map, polyline, e) {
     //getFlightPlanByItem(item);
 }
 
-
-
-async function getFlightPlanByItem(item) {
-    let url = "/api/FlightPlan/" + item;
-    let jdata = await fetch(url);
-    let airplaneData = await jdata.json();
-    //console.log(airplaneData);
-    createPath(airplaneData, map, pathsDictionary, polyline);
-    createSegmentsList(airplaneData);
-    return airplaneData;
-}
-
-function createSegmentsList(airplane) {
-    segmentsDictionary.set(airplane.initial_location.flight_id, airplane.segments);
+function createSegmentsList(airplane, flight_id) {
+    segmentsDictionary.set(flight_id, airplane.segments);
 }
 
 function createMap() {
@@ -351,19 +348,19 @@ function createMap() {
     return map;
 }
 
-function createPath(airplane, map, pathsDictionary, polyline) {
+function createPath(airplane, map, pathsDictionary, polyline, flight_id) {
 
     //jdata.forEach(function (airplane) { //Loop over all the flights from server
     let singleAirplanePathArray = []
-    let lat = parseFloat(airplane.latitude);
-    let long = parseFloat(airplane.longitude);
+    let lat = parseFloat(airplane.initial_location.latitude);
+    let long = parseFloat(airplane.initial_location.longitude);
     singleAirplanePathArray.push([lat, long]); //Add start location
     for (let i = 0; i < airplane.segments.length; i++) {
     //airplane.segments.forEach(function (segment) { //Loop over the segments and add them to array
         singleAirplanePathArray.push([parseFloat(airplane.segments[i].latitude), parseFloat(airplane.segments[i].longitude)]);
     }
-    pathsDictionary.set(airplane.initial_location.flight_id, singleAirplanePathArray); //Add fligt:path to dictionary
     //});
+    pathsDictionary.set(flight_id, singleAirplanePathArray);
 }
 
 function showPath(flight_id, map){
@@ -377,7 +374,7 @@ function showPath(flight_id, map){
     map.addLayer(path[0]);
 }
 
-
+//1. Post does not work (drag and drop > server > client)
 //2. Removing from dectionaries after delete
 //3. The EVENT bug(flight details and path)
 

@@ -12,16 +12,16 @@ namespace FlightControlWeb.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FlightPlansController : ControllerBase
+    public class FlightPlanController : ControllerBase
     {
         private readonly FlightPlanContext _context;
 
-        public FlightPlansController(FlightPlanContext context)
+        public FlightPlanController(FlightPlanContext context)
         {
             _context = context;
         }
 
-        // GET: api/FlightPlans
+        // GET: api/FlightPlan
         [HttpGet]
         public async Task<ActionResult<IEnumerable<FlightPlan>>> GetFlightPlan()
         {
@@ -38,25 +38,46 @@ namespace FlightControlWeb.Controllers
             return fp;
         }
 
-        // GET: api/FlightPlans/5
+        // GET: api/FlightPlan/5
         [HttpGet("{id}")]
         public async Task<ActionResult<FlightPlan>> GetFlightPlan(string id)
         {
             var flightPlan = await _context.FlightPlan.FindAsync(id);
 
-            if (flightPlan == null)
+            if (flightPlan != null)
             {
-                return NotFound();
+
+
+                var loc = await _context.first_location.ToListAsync();
+                var seg = await _context.segments.ToListAsync();
+                seg = seg.OrderBy(o => o.key).ToList();
+
+
+                flightPlan.initial_location = loc.Where(a => a.flight_id.CompareTo(id) == 0).First();
+                flightPlan.segments = seg.Where(a => a.flight_id.CompareTo(id) == 0).ToList();
+
             }
-
-
-            var loc = await _context.first_location.ToListAsync();
-            var seg = await _context.segments.ToListAsync();
-            seg = seg.OrderBy(o => o.key).ToList();
-
-
-            flightPlan.initial_location = loc.Where(a => a.flight_id.CompareTo(id) == 0).First();
-            flightPlan.segments = seg.Where(a => a.flight_id.CompareTo(id) == 0).ToList();
+            else
+            {
+                try
+                {
+                    var s = FlightPlanContext.flightServerDictiontary[id];
+                    if (s == null)
+                    {
+                        return NotFound();
+                    }
+                    string get = s.ServerURL + "/api/FlightPlan/" + id;
+                    flightPlan = FlightsController.GetFlightFromServer<FlightPlan>(get);
+                    if (flightPlan == null)
+                    {
+                        return NotFound();
+                    }
+                }
+                catch (Exception)
+                {
+                    return NotFound();
+                }
+            }
 
 
 
@@ -64,7 +85,7 @@ namespace FlightControlWeb.Controllers
         }
 
 
-        // POST: api/FlightPlans
+        // POST: api/FlightPlan
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
         // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
         [HttpPost]
