@@ -1,8 +1,10 @@
 ﻿let previousMarkedAirplane = null;
 let previousMarkedRow = null;
 let polyline;
-let path = [];
+let path = [null, null];
 let group = L.layerGroup();
+const markersDictionary = new Map();
+const externalFlightsDictionary = new Map();
 const pathsDictionary = new Map();
 const segmentsDictionary = new Map();
 let markedMarkerIcon = L.icon({
@@ -51,7 +53,7 @@ $(document).ready(function () {
 })
 
 function getFlightsFromServer(map, polyline) {
-    const planesDictionary = new Map();
+    
     setInterval(function () {
         var date = new Date().toISOString();
         //console.log(date);
@@ -61,7 +63,7 @@ function getFlightsFromServer(map, polyline) {
             url: url,
             dataType: 'json',
             success: function (jdata) {
-                handleFlights(jdata, map, planesDictionary, pathsDictionary, markerIcon, polyline);
+                handleFlights(jdata, map, markersDictionary, pathsDictionary, markerIcon, polyline);
             },
             error: errorCallback
         });
@@ -78,28 +80,49 @@ async function getFlightPlanByItem(flight_id) {
     return airplaneData;
 }
 
-function handleFlights(jdata, map, planesDictionary, pathsDictionary, markerIcon, polyline) {
+function handleFlights(jdata, map, markersDictionary, pathsDictionary, markerIcon, polyline) {
+    externalFlightsDictionary.forEach(function (ourFlight, flight_id) {
+        var flightExists = false;
+        if (jdata.length == 0) {
+            removeExternalFlight(ourFlight);
+        }
+        jdata.forEach(function (serverFlight) {
+            if (ourFlight.flight_id === serverFlight.flight_id) {
+                flightExists = true;
+            }
+
+        });  
+        if (!flightExists) {
+            removeExternalFlight(ourFlight);
+        }
+    });
+
+
     jdata.forEach(function (airplane, i) {
 
-        if (!pathsDictionary.has(airplane.flight_id)) {
+
+        if (!pathsDictionary.has(airplane.flight_id)) { //Create path and segments
             let currentFlight = getFlightPlanByItem(airplane.flight_id);
-            
+
         }
 
         let currentLocation = calculateLocation(airplane);
         //let lat = parseFloat(airplane.latitude);
         //let long = parseFloat(airplane.longitude);
-        if (planesDictionary.has(airplane.flight_id)) { //Check if the flight exists in dictionary
-            let flightMarker = planesDictionary.get(airplane.flight_id);
+        if (markersDictionary.has(airplane.flight_id)) { //Check if the flight exists in dictionary
+            let flightMarker = markersDictionary.get(airplane.flight_id);
             flightMarker.setLatLng(currentLocation);
         } else { //Add a flight and it's icon to the dictionary
+            if (airplane.is_external) {
+                externalFlightsDictionary.set(airplane.flight_id, airplane);
+            }
             let marker = L.marker(currentLocation, { icon: markerIcon }).addTo(map)
                 .openPopup().on('click', function (e) {
                     clickOnAirplane(airplane, map, polyline, e);
                 }); 
             marker.id = airplane.flight_id;
-            planesDictionary.set(airplane.flight_id, marker);
-            addFlightToFlightsTable(airplane, map, planesDictionary);
+            markersDictionary.set(airplane.flight_id, marker);
+            addFlightToFlightsTable(airplane, map, markersDictionary);
         }
         
         //the flight has been terminated/not started.
@@ -152,44 +175,50 @@ function errorCallback() {
     alert("Error");
 }
 
-function addFlightToFlightsTable(airplaneItem, map, planesDictionary) {
+function addFlightToFlightsTable(airplaneItem, map, markersDictionary) {
     let tableRef = document.getElementById("myFlightsTable").getElementsByTagName('tbody')[0];
-
+    if (airplaneItem.is_external) {
+        tableRef = document.getElementById("externalFlightsTable").getElementsByTagName('tbody')[0];
+    }
 
     let row = tableRef.insertRow();
     row.setAttribute("id", "row" + airplaneItem.flightId);
 
-    let removalButton = document.createElement("INPUT");
-    removalButton.setAttribute("type", "image");
-    removalButton.setAttribute("id", "remBut" + airplaneItem.flight_id);
-    removalButton.setAttribute("src", "Images/trash.png");
-    removalButton.setAttribute("style", "width: 17px; height: 20px");
+
         
     row.addEventListener("click", function (e) {
         //let eleID = e.target.id
         //let notRemoveClicked = eleID === "remBut" + airplaneItem.flight_id;
         //let notRemoveClicked = elementType.compareLocale("image")
         //if (!notRemoveClicked) {
-            clickOnFlightRow(airplaneItem, row, planesDictionary);
+            clickOnFlightRow(airplaneItem, row, markersDictionary);
         //}
     });
     row.setAttribute("id", airplaneItem.flight_id.toString());
     row.insertCell(0).innerHTML = airplaneItem.flight_id;
     row.insertCell(1).innerHTML = airplaneItem.company_name;
-    removalButton.addEventListener("click", function () {
-        removeFlight(airplaneItem, map, planesDictionary);
-    });
-    row.insertCell(2).appendChild(removalButton);
+    if (!airplaneItem.is_external) {
+        let removalButton = document.createElement("INPUT");
+        removalButton.setAttribute("type", "image");
+        removalButton.setAttribute("id", "remBut" + airplaneItem.flight_id);
+        removalButton.setAttribute("src", "Images/trash.png");
+        removalButton.setAttribute("style", "width: 17px; height: 20px");
+        removalButton.addEventListener("click", function () {
+            removeFlight(airplaneItem, map, markersDictionary);
+        });
+        row.insertCell(2).appendChild(removalButton);
+
+    }
 }
 
-function clickOnFlightRow(airplaneItem, row, planesDictionary) {
+function clickOnFlightRow(airplaneItem, row, markersDictionary) {
     showFlightPlan(airplaneItem);
     showPath(airplaneItem.flight_id, map);
     markRow(row);
-    let marker = planesDictionary.get(airplaneItem.flight_id);
+    let marker = markersDictionary.get(airplaneItem.flight_id);
     marker.setIcon(markedMarkerIcon);
     if (previousMarkedAirplane && previousMarkedAirplane.localeCompare(airplaneItem.flight_id)) {
-        let prevMark = planesDictionary.get(previousMarkedAirplane)
+        let prevMark = markersDictionary.get(previousMarkedAirplane)
         prevMark.setIcon(markerIcon);
     }
     previousMarkedAirplane = airplaneItem.flight_id;
@@ -217,7 +246,29 @@ function showFlightPlan(item) { //Show details of marked flight in the bottom ta
     document.getElementById("Is_external").textContent = item.is_external;
 }
 
-function removeFlight(airplaneItem, map, planesDictionary) {
+function removeExternalFlight(flight) {
+    removeFlightDetails(flight.flight_id);
+
+
+    if (path[1] != null && flight.flight_id === path[1]) {
+        map.removeLayer(path[0]);
+        path[0] = null;
+    }
+    pathsDictionary.delete(flight.flight_id);
+
+    deleteMarker(flight, map, markersDictionary);
+    markersDictionary.delete(flight.flight_id);
+
+    externalFlightsDictionary.delete(flight.flight_id);
+
+    let row = document.getElementById(flight.flight_id);
+    //let tr = row.parentNode; // the row to be removed
+    row.parentNode.removeChild(row);
+
+}
+
+
+function removeFlight(airplaneItem, map, markersDictionary) {
     // event.target will be the input element.
     let td = event.target.parentNode;
     let tr = td.parentNode; // the row to be removed
@@ -237,7 +288,8 @@ function removeFlight(airplaneItem, map, planesDictionary) {
 
 
     //delete the marker from the map.
-    deleteMarker(airplaneItem, map, planesDictionary);
+    deleteMarker(airplaneItem, map, markersDictionary);
+    markersDictionary.delete(airplaneItem.flight_id);
 
     //let trId = tr.id;
     //delete flight from database if its a local flight.
@@ -259,10 +311,7 @@ function removeFlight(airplaneItem, map, planesDictionary) {
 
     //let row = document.getElementById(previousMarkedAirplane.flight_id);
     ////.getElementsByTagName('tbody')[0]
-
-    //flightsRowOnClick(previousMarkedAirplane, row, planesDictionary);
-
-
+    //flightsRowOnClick(previousMarkedAirplane, row, markersDictionary);
 }
 
 //get a flight and delete it from the markers(planes) list if its there.
@@ -374,11 +423,10 @@ function showPath(flight_id, map){
     map.addLayer(path[0]);
 }
 
-//1. Post does not work (drag and drop > server > client)
-//2. Removing from dectionaries after delete
-//3. The EVENT bug(flight details and path)
 
-//5. Servers
+//3. The EVENT bug(flight details and path)
+//4. Path and details are not deleted when flight is deleted
+
 //6. Tests
 //7. Ip windoow
 //8. Servers Window

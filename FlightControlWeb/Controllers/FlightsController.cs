@@ -38,7 +38,7 @@ namespace FlightControlWeb.Controllers
             {
                 relative = DateTimeOffset.Parse(relative_to).UtcDateTime;
             }
-            catch (Exception e)
+            catch
             {
                 //if (e.Message == "Unable to parse.")
                 //{
@@ -144,7 +144,14 @@ namespace FlightControlWeb.Controllers
                 {
                     f.is_external = true;
                     // Save the server that the current flight belongs to him.
-                    FlightPlanContext.flightServerDictiontary[f.flight_id] = s;
+                    try
+                    {
+                        FlightPlanContext.flightServerDictiontary[f.flight_id] = s;
+                    }
+                    catch
+                    {
+                        continue;
+                    }
                 }
             }
             _context.SaveChanges();
