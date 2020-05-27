@@ -433,11 +433,10 @@ function showPath(flight_id, map){
     map.addLayer(path[0]);
 }
 
-
-//3. The EVENT bug(flight details and path)
-//4. Path and details are not deleted when flight is deleted
+//1. Config button becomes blue after click
 //5. Rotate icon & resize icon for zoom
 //6. Tests
 //7. Ip windoow
 //8. Servers Window
 //9. Raise errors
+

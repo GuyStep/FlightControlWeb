@@ -91,24 +91,7 @@ namespace FlightControlWeb.Controllers
         [HttpPost]
         public async Task<ActionResult<FlightPlan>> PostFlightPlan(FlightPlan flightPlan)
         {
-/*            _context.FlightPlan.Add(flightPlan);
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateException)
-            {
-                if (FlightPlanExists(flightPlan.flight_id))
-                {
-                    return Conflict();
-                }
-                else
-                {
-                    throw;
-                }
-            }*/
 
-            //SET ID
             flightPlan.flight_id = getNewId(flightPlan.company_name.ToString(), flightPlan.initial_location.date_time.ToString());
             List<FlightPlan> fp = await _context.FlightPlan.ToListAsync();
             var exist = fp.Where(a => a.flight_id.CompareTo(flightPlan.flight_id) == 0).ToList();
@@ -120,7 +103,6 @@ namespace FlightControlWeb.Controllers
             flightPlan.longitude = flightPlan.initial_location.longitude;
             flightPlan.latitude = flightPlan.initial_location.latitude;
             _context.FlightPlan.Add(flightPlan);
-            //create flight with the relevent flight id. *** the flight id is placed just when adding it to the DataBase
             var loc = flightPlan.initial_location;
             loc.flight_id = flightPlan.flight_id;
             _context.first_location.Add(loc);
