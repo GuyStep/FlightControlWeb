@@ -7,6 +7,7 @@ const markersDictionary = new Map();
 const externalFlightsDictionary = new Map();
 const pathsDictionary = new Map();
 const segmentsDictionary = new Map();
+let removeButtonClicked = false;
 let markedMarkerIcon = L.icon({
     iconUrl: '/Images/planeIconSelected.png',
     iconSize: [50, 50], // size of the icon
@@ -205,6 +206,7 @@ function addFlightToFlightsTable(airplaneItem, map, markersDictionary) {
         removalButton.setAttribute("style", "width: 17px; height: 20px");
         removalButton.addEventListener("click", function () {
             removeFlight(airplaneItem, map, markersDictionary);
+            removeButtonClicked = true;
         });
         row.insertCell(2).appendChild(removalButton);
 
@@ -212,6 +214,12 @@ function addFlightToFlightsTable(airplaneItem, map, markersDictionary) {
 }
 
 function clickOnFlightRow(airplaneItem, row, markersDictionary) {
+    if (removeButtonClicked) {
+        removeFlightDetails(airplaneItem);
+        removeButtonClicked = false;
+        return;
+    }
+
     showFlightPlan(airplaneItem);
     showPath(airplaneItem.flight_id, map);
     markRow(row);
@@ -277,7 +285,6 @@ function removeFlight(airplaneItem, map, markersDictionary) {
         map.removeLayer(path[0]);
     }
     //delete filght details if it was presed
-    removeFlightDetails(airplaneItem.flight_id);
 
 
     if (airplaneItem.flight_id === path[1]) {
@@ -308,6 +315,7 @@ function removeFlight(airplaneItem, map, markersDictionary) {
     }
 
 
+    removeFlightDetails(airplaneItem.flight_id);
 
     //let row = document.getElementById(previousMarkedAirplane.flight_id);
     ////.getElementsByTagName('tbody')[0]
@@ -339,8 +347,9 @@ function removeEndedFlight(item, map, planes) {
 }
 //if the flight details was shown
 function removeFlightDetails(flight_id) {
-    let flightId = document.getElementById("flightID").textContent;
-    if (flight_id === flightId) {
+    let element = document.getElementById("flightID");
+    let flightId = element.textContent;
+    if (flight_id == null || flight_id === flightId) {
         document.getElementById("flightID").textContent = " ";
         document.getElementById("Company_name").textContent = " ";
         document.getElementById("Latitude").textContent = " ";
@@ -348,7 +357,7 @@ function removeFlightDetails(flight_id) {
         document.getElementById("Passengers").textContent = " ";
         document.getElementById("Date_time").textContent = " ";
         document.getElementById("Is_external").textContent = " ";
-        //group.clearLayers();
+        group.clearLayers();
 
     }
 }
@@ -426,7 +435,7 @@ function showPath(flight_id, map){
 
 //3. The EVENT bug(flight details and path)
 //4. Path and details are not deleted when flight is deleted
-
+//5. Rotate icon & resize icon for zoom
 //6. Tests
 //7. Ip windoow
 //8. Servers Window
