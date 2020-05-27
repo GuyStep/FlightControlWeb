@@ -41,6 +41,9 @@
             font-family: "Century Gothic";
             font-weight: bold;
             background-image: linear-gradient(to bottom right, rgba(55,185,233), rgba(103,195,198), rgba(160,188,178));
+            margin: 0;
+            height: 100%;
+            overflow: hidden
         }
 
         .table-light {
@@ -62,6 +65,10 @@
             font-weight: 900;
         }
 
+        .tbodycolor {
+            color: #526b70;
+        }
+
         .bg-primary {
             //color: #2e87e5b0;
             color: #ffffff;
@@ -69,13 +76,22 @@
             //border-color: #b8b4b400;
             //font-weight: 900;
         }
-            .bg-primary:hover {
-                <!-- color: #2e87e5b0; -->
-                color: #ffffff;
-                background-color: #545f5d29 !important;
-                <!-- border-color: #b8b4b400; -->
-                <!-- font-weight: 900; -->
-            }  
+        .bg-primary:hover {
+            <!-- color: #2e87e5b0; -->
+            color: #ffffff;
+            background-color: #545f5d29 !important;
+            <!-- border-color: #b8b4b400; -->
+            <!-- font-weight: 900; -->
+        }
+
+        #internalFlights {
+            overflow: auto;
+            height: 175px
+        }        
+        #externalFlights {
+            overflow: auto;
+            height: 175px
+        }
         
 
         #logoDiv {
@@ -107,7 +123,7 @@
                 </button>
                 <!-- Button to Open the Modal -->
                 <button type="button" class="float-right btn btn-primary" data-toggle="modal" data-target="#setIPModal">
-                    Configuration
+                    About
                 </button>
                 <!-- The Modal -->
                 <div class="modal fade" id="setIPModal">
@@ -182,7 +198,7 @@
                                     <th>External Flight</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody class="tbodycolor">
                                 <tr>
                                     <td id="flightID"></td>
                                     <td id="Company_name"></td>
@@ -213,32 +229,36 @@
                 </div>
                 <div class="row">
                     <h3 id="myFlightsHeader">My Flights</h3>
-                    <table class="table table-light table-hover" id="myFlightsTable">
-                        <thead>
-                            <tr>
-                                <th>Flight ID</th>
-                                <th>Company name</th>
-                                <th>Scheduled time of arrival</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        </tbody>
-                    </table>
+                    <div id="internalFlights">
+                        <table class="table table-light table-hover" id="myFlightsTable">
+                            <thead>
+                                <tr>
+                                    <th>Flight ID</th>
+                                    <th>Company name</th>
+                                    <th> </th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody class="tbodycolor">
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
                 <div class="row">
                     <h3 id="externalFlightsHeader">External Flights</h3>
-                    <table class="table table-light table-hover" id="externalFlightsTable">
-                        <thead>
-                            <tr>
-                                <th>Flight ID</th>
-                                <th>Company name</th>
-                                <th>Scheduled time of arrival</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        </tbody>
-                    </table>
+                    <div id="externalFlights">
+                        <table class="table table-light table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Flight ID</th>
+                                    <th>Company name</th>
+                                    <th> </th>
+                                </tr>
+                            </thead>
+                            <tbody class="tbodycolor">
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
