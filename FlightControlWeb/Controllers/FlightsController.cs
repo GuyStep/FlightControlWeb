@@ -146,7 +146,17 @@ namespace FlightControlWeb.Controllers
                     // Save the server that the current flight belongs to him.
                     try
                     {
-                        FlightPlanContext.flightServerDictiontary[f.flight_id] = s;
+                        try
+                        {
+                            FlightPlanContext.flightServerDictiontary.Add(f.flight_id, s);
+
+                            //FlightPlanContext.flightServerDictiontary[] = ;
+                            //FlightPlanContext.flightServerDictiontary[f.flight_id] = s;
+                        }
+                        catch
+                        {
+                            continue;
+                        }
                     }
                     catch
                     {

@@ -244,7 +244,7 @@ function markRow(row) { //Marks the row was clicked (or matching plane was click
 function showFlightPlan(item) { //Show details of marked flight in the bottom table
     let td = document.getElementById("flight_details");
     let tr = td.rows[0];
-    tr.id = item.flight_id;
+    //tr.id = item.flight_id;
     document.getElementById("flightID").textContent = item.flight_id;
     document.getElementById("Company_name").textContent = item.company_name;
     document.getElementById("Latitude").textContent = item.latitude;
@@ -271,7 +271,8 @@ function removeExternalFlight(flight) {
 
     let row = document.getElementById(flight.flight_id);
     //let tr = row.parentNode; // the row to be removed
-    row.parentNode.removeChild(row);
+    let parent = row.parentNode;
+    parent.removeChild(row);
 
 }
 
