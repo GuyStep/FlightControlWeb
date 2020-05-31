@@ -15,66 +15,23 @@ function readJSON() {
     let inputFile = document.getElementById("myFlightsInput").files[0];
     let reader = new FileReader();
     let jdata;
-    let segmentsFail = false;
     reader.onload = function () {
         jdata = reader.result.replace('/r', '');
-        let stringJSON, parsedJSON;
-        let validFile = true;
+        let parsedJSON;
         try {
             parsedJSON = JSON.parse(jdata);
-            stringJSON = JSON.stringify(jdata);
         } catch (e) {
             showError("File is not a valid JSON");
             return;
         }
-        //if (parsedJSON != null) {
 
-            
-        if (parsedJSON.company_name != null) {
-            if (!(typeof parsedJSON.company_name === 'string')) {
-                showError("Company name is not valid");
-                return;
-            }
-        }
-        else {
-            showError("Missing company name");
+        if (!validCompanyName(parsedJSON.company_name)) {
             return;
         }
+        
         if (parsedJSON.initial_location != null) {
-            if (parsedJSON.initial_location.date_time != null) {
-                let convertedDate = new Date(parsedJSON.initial_location.date_time);
-                if (isNaN(convertedDate)) {
-                    showError("Date-time is not valid");
-                    return;
-                }
-            }
-            else {
-                showError("Missing date time");
+            if (!validInitialLocation(parsedJSON.initial_location)) {
                 return;
-
-            }
-            if (parsedJSON.initial_location.longitude != null) {
-                if (parsedJSON.initial_location.longitude > 180 || parsedJSON.initial_location.longitude < -180) {
-                    showError("longitude is not valid");
-                    return;
-                }
-            }
-            else {
-                showError("Missing longitude");
-                return;
-
-            }
-
-            if (parsedJSON.initial_location.latitude != null) {
-                if (parsedJSON.initial_location.latitude > 90 || parsedJSON.initial_location.latitude < -90) {
-                    showError("latitude is not valid");
-                    return;
-                }
-            }
-            else {
-                showError("Missing latitude");
-                return;
-
             }
         }
         else {
@@ -95,60 +52,121 @@ function readJSON() {
         }
 
         if (parsedJSON.segments != null) {
-            parsedJSON.segments.forEach(function (segment) {
-                if (segment.timespan_seconds != null) {
-                    if (!(Number.isInteger(segment.timespan_seconds) && (segment.timespan_seconds >= 0))) {
-                        showError("timespan seconds is not valid");
-                        segmentsFail = true;
-                        return;
-                    }
-                }
-                else {
-                    showError("Missing timespan seconds");
-                    segmentsFail = true;
-                    return;
-
-                }
-                if (segment.longitude != null) {
-                    if (segment.longitude > 180 || segment.longitude < -180) {
-                        showError("segment longitude is not valid");
-                        segmentsFail = true;
-                        return;
-                    }
-                }
-                else {
-                    showError("Missing segment longitude");
-                    segmentsFail = true;
-                    return;
-
-                }
-
-                if (segment.latitude != null) {
-                    if (segment.latitude > 90 || segment.latitude < -90) {
-                        showError("segment latitude is not valid");
-                        segmentsFail = true;
-                        return;
-                    }
-                }
-                else {
-                    showError("Missing segment latitude");
-                    segmentsFail = true;
-                    return;
-                } 
-            })
+            if (!validSegments(parsedJSON.segments)) {
+                return;
+            }
         }
         else {
             showError("Missing segments");
             return;
         }
 
-        if (segmentsFail) {
-            return;
-        }
         postData(jdata);
     }
     reader.readAsText(inputFile);
 }
+
+function validCompanyName(company_name) {
+    if (company_name != null) {
+        if (!(typeof company_name === 'string')) {
+            showError("Company name is not valid");
+            return false;
+        }
+    }
+    else {
+        showError("Missing company name");
+        return false;
+    }
+    return true;
+}
+
+function validInitialLocation(initial_location) {
+    if (initial_location.date_time != null) {
+        let convertedDate = new Date(initial_location.date_time);
+        if (isNaN(convertedDate)) {
+            showError("Date-time is not valid");
+            return false;
+        }
+    }
+    else {
+        showError("Missing date time");
+        return false;
+
+    }
+    if (initial_location.longitude != null) {
+        if (initial_location.longitude > 180 || initial_location.longitude < -180) {
+            showError("longitude is not valid");
+            return false;
+        }
+    }
+    else {
+        showError("Missing longitude");
+        return false;
+
+    }
+
+    if (initial_location.latitude != null) {
+        if (initial_location.latitude > 90 || initial_location.latitude < -90) {
+            showError("latitude is not valid");
+            return false;
+        }
+    }
+    else {
+        showError("Missing latitude");
+        return false;
+
+    }
+    return true;
+}
+
+function validSegments(segments) {
+    let isValid = true;
+    segments.forEach(function (segment) {
+        isValid = checkSingleSegment(segment);
+        
+    })
+
+    return isValid;
+}
+
+function checkSingleSegment(segment) {
+    if (segment.timespan_seconds != null) {
+        if (!(Number.isInteger(segment.timespan_seconds) && (segment.timespan_seconds >= 0))) {
+            showError("timespan seconds is not valid");
+            return false;
+        }
+    }
+    else {
+        showError("Missing timespan seconds");
+        return false;
+
+    }
+
+    if (segment.longitude != null) {
+        if (segment.longitude > 180 || segment.longitude < -180) {
+            showError("segment longitude is not valid");
+            return false;
+        }
+    }
+    else {
+        showError("Missing segment longitude");
+        return false;
+
+    }
+
+    if (segment.latitude != null) {
+        if (segment.latitude > 90 || segment.latitude < -90) {
+            showError("segment latitude is not valid");
+            return false;
+        }
+    }
+    else {
+        showError("Missing segment latitude");
+        return false;
+    }
+    return true;
+}
+
 
 function postData(jdata) {
     let request = new XMLHttpRequest();
