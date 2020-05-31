@@ -4,6 +4,7 @@ using FlightControlWeb.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace FlightControllerUnitTest
@@ -11,57 +12,86 @@ namespace FlightControllerUnitTest
     [TestClass]
     public class FlightControllerUnitTest
     {
-        // _sut == system under test
-        private readonly FlightPlanContext _FlightDBContextMock;
-        private readonly FlightPlanController _sut;
-        //Constructor
+        private readonly FlightPlanContext flightPlanContext;
+        private readonly FlightPlanController testedCotroller;
+        
+        //Tester constructor
         public FlightControllerUnitTest()
         {
             string[] args = { };
-            var d = new DbContextOptionsBuilder<FlightPlanContext>();
-            var h = Program.CreateHostBuilder(args);
-            d.UseInMemoryDatabase("DBName");
-            _FlightDBContextMock = new FlightPlanContext(d.Options);
-            _sut = new FlightPlanController(_FlightDBContextMock);
+            var builder = new DbContextOptionsBuilder<FlightPlanContext>();
+            var host = Program.CreateHostBuilder(args);
+            builder.UseInMemoryDatabase("DataBase");
+            flightPlanContext = new FlightPlanContext(builder.Options);
+            testedCotroller = new FlightPlanController(flightPlanContext);
         }
 
 
         [TestMethod]
-        public async Task GetFlightPlan_ShouldReturnFlightPlan_WhenFlightPlanExists()
+        public async Task GetFlightPlanExpectedTrue()
         {
+            // Arrange
             Location location = new Location();
             location.flight_id = "Ag123456";
-
-            var flightPlanDto = new FlightPlan
+            var insertedFlight = new FlightPlan
             {
                 flight_id = "Ag123456",
                 passengers = 101,
                 company_name = "AmitGuy",
                 initial_location = location
             };
-            _FlightDBContextMock.FlightPlan.Add(flightPlanDto);
-            _FlightDBContextMock.SaveChanges();
-
-            var flightPlan = await _FlightDBContextMock.FlightPlan.FindAsync("Ag123456");
-            Task<ActionResult<FlightPlan>> existingFlightPlanReturned = _sut.GetFlightPlan("Ag123456");
             
+            // Act
+            flightPlanContext.FlightPlan.Add(insertedFlight);
+            flightPlanContext.SaveChanges();
+            var flightPlan = await flightPlanContext.FlightPlan.FindAsync("Ag123456");
+            Task<ActionResult<FlightPlan>> existingFlightPlanReturned = testedCotroller.GetFlightPlan("Ag123456");
+
+            // Assert
             Assert.IsNotNull(existingFlightPlanReturned);
- 
             Assert.IsTrue("Ag123456" == flightPlan.flight_id);
             Assert.IsTrue("Ag123456" == flightPlan.initial_location.flight_id);
-            Assert.IsTrue(101 == flightPlan.passengers);
             Assert.IsTrue("AmitGuy" == flightPlan.company_name);
+            Assert.IsTrue(101 == flightPlan.passengers);
 
         }
         [TestMethod]
         [DataRow("Ga123456")]
         [DataRow("St1234567")]
+        [DataRow("")]
 
-        public async Task GetFlightPlan_ShouldReturnNotFound_WhenFlightPlanNotExist(string id)
+        public async Task GetFlightPlanExpectedFalse(string id)
         {
-             ActionResult<FlightPlan> notExistingFlightPlanReturned = await _sut.GetFlightPlan(id);
+            // Act
+            ActionResult<FlightPlan> notExistingFlightPlanReturned = await testedCotroller.GetFlightPlan(id);
             string result = notExistingFlightPlanReturned.Result.ToString();
-             Assert.IsTrue(result.Contains("NotFound"));
+
+            // Assert
+            Assert.IsTrue(result.Contains("NotFound"));
+        }
+
+        [TestMethod]
+
+        public async Task PostFlightPlan()
+        {
+            // Arrange
+            var flightPlan = new FlightPlan
+            {
+                flight_id = "Ag123456",
+                passengers = 101,
+                company_name = "AmitGuy",
+                initial_location = new Location()
+            };
+
+            // Act
+            Task<ActionResult<FlightPlan>> postedFlight = testedCotroller.PostFlightPlan(flightPlan);
+            var flightPlans = await flightPlanContext.FlightPlan.ToListAsync();
+            FlightPlan resultFlight = flightPlans.Where(a => a.flight_id.CompareTo(flightPlan.flight_id) == 0).First();
+
+            // Assert
+            Assert.IsNotNull(resultFlight);
+            Assert.IsTrue(resultFlight.company_name.CompareTo(flightPlan.company_name) == 0);
+            Assert.IsTrue(resultFlight.passengers==flightPlan.passengers);
         }
     }
 }

@@ -1,21 +1,19 @@
-﻿
-function uploadOnDragOver() {
+﻿function uploadOnDragOver() {
     document.getElementById("dropArea").style.display = "inline";
 }
 
 function uploadOnDragLeave() {
     document.getElementById("dropArea").style.display = "none";
 }
+
 function uploadOnDrop() {
     document.getElementById("dropArea").style.display = "none";
-    setTimeout(submit, 100);
+    setTimeout(readJSON, 100);
 }
 
-function submit() {
+function readJSON() {
     let inputFile = document.getElementById("myFlightsInput").files[0];
-
     let reader = new FileReader();
-
     let jdata;
     reader.onload = function () {
         jdata = reader.result.replace('/r', '');
@@ -23,6 +21,7 @@ function submit() {
     }
     reader.readAsText(inputFile);
 }
+
 function postData(jdata) {
     let request = new XMLHttpRequest();
     request.open("POST", "/api/FlightPlan", true);

@@ -23,7 +23,6 @@ namespace FlightControlWeb.Models
         public string date_time { get; set; }
         [JsonIgnore]
         public bool is_external { get; set; }
-        //[JsonPropertyName("segments")]
         public List<Segment> segments { get; set; }
 
     }

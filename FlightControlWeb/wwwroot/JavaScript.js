@@ -8,16 +8,15 @@ const externalFlightsDictionary = new Map();
 const pathsDictionary = new Map();
 const segmentsDictionary = new Map();
 let removeButtonClicked = false;
-let markedMarkerIcon = L.icon({
+
+let selectedAirplaneIcon = L.icon({
     iconUrl: '/Images/planeIconSelected.png',
     iconSize: [50, 50], // size of the icon
     iconAnchor: [25,25], // point of the icon which will correspond to marker's location
     popupAnchor: [-3, -76] // point from which the popup should open relative to the iconAnchor
 });
 let map;
-
-
-let markerIcon = L.icon({
+let unselectedAirplaneIcon = L.icon({
     iconUrl: '/Images/planeIcon.png',
     iconSize: [50, 50], // size of the icon
     iconAnchor: [25, 25], // point of the icon which will correspond to marker's location
@@ -26,15 +25,6 @@ let markerIcon = L.icon({
 
 $(document).ready(function () {
     map = createMap();
-    //group.addTo(map);
-    //var polylinePoints = [
-    //    [37.781814, -122.404740],
-    //    [37.781719, -122.404637],
-    //    [37.781489, -122.404949],
-    //    [37.780704, -122.403945],
-    //    [37.780012, -122.404827]
-    //];
-    //var path1 = L.polyline(polylinePoints).addTo(map);
     map.on('click', function () {
         map.removeLayer(path[0]);
         removeFlightDetails()
@@ -42,18 +32,16 @@ $(document).ready(function () {
             previousMarkedRow.classList.remove("bg-primary"); //Unmark the marked row
         }
 
-
-        //switch all markers icons' to non-marked icon
         map.eachLayer(function (layer) {
             if (layer instanceof L.Marker) {
-                layer.setIcon(markerIcon);
+                layer.setIcon(unselectedAirplaneIcon);
             }
         });
     });
-    getFlightsFromServer(map, polyline);
+    getFlights(map, polyline);
 })
 
-function getFlightsFromServer(map, polyline) {
+function getFlights(map, polyline) {
     
     setInterval(function () {
         var date = new Date().toISOString();
@@ -64,14 +52,42 @@ function getFlightsFromServer(map, polyline) {
             url: url,
             dataType: 'json',
             success: function (jdata) {
-                handleFlights(jdata, map, markersDictionary, pathsDictionary, markerIcon, polyline);
+                handleFlights(jdata, map, markersDictionary, pathsDictionary, unselectedAirplaneIcon, polyline);
             },
-            error: errorCallback
+            error: function (xhr, status, error) {
+                showError("Get or Server error");
+                var err = eval("(" + xhr.responseText + ")");
+                //alert(err.Message);
+            }
         });
     }, 1000);
 }
 
-async function getFlightPlanByItem(flight_id) {
+function showError(errorMessage ="Error") {
+    //alert("Error");
+    if (document.getElementById("errorMessage")) {
+        return;
+    }
+    let parentDiv = document.getElementById("buttonsDiv");
+    console.log("Error: " + errorMessage);
+
+
+    let errorDiv = document.createElement("div");
+    errorDiv.setAttribute("id", "errorMessage");
+    errorDiv.setAttribute("style", "color:red; width: 400px; height: 26px; background-color:beige; border-radius: 5px; text-align:center; margin-left:200px");
+    errorDiv.innerHTML = "Error: "+errorMessage;
+
+    parentDiv.appendChild(errorDiv);
+
+    errorDiv.addEventListener("click", function () {
+        parentDiv.removeChild(errorDiv);
+    });
+    setTimeout(function () {
+        parentDiv.removeChild(errorDiv);
+    }, 5000); // 1000ms = 1 second
+}
+
+async function getFlightByID(flight_id) {
     let url = "/api/FlightPlan/" + flight_id;
     let jdata = await fetch(url);
     let airplaneData = await jdata.json();
@@ -98,12 +114,11 @@ function handleFlights(jdata, map, markersDictionary, pathsDictionary, markerIco
         }
     });
 
-
     jdata.forEach(function (airplane, i) {
 
 
         if (!pathsDictionary.has(airplane.flight_id)) { //Create path and segments
-            let currentFlight = getFlightPlanByItem(airplane.flight_id);
+            let currentFlight = getFlightByID(airplane.flight_id);
 
         }
 
@@ -172,9 +187,7 @@ function calculateLocation(airplane) {
     }
 }
 
-function errorCallback() {
-    alert("Error");
-}
+
 
 function addFlightToFlightsTable(airplaneItem, map, markersDictionary) {
     let tableRef = document.getElementById("myFlightsTable").getElementsByTagName('tbody')[0];
@@ -222,24 +235,23 @@ function clickOnFlightRow(airplaneItem, row, markersDictionary) {
 
     showFlightPlan(airplaneItem);
     showPath(airplaneItem.flight_id, map);
-    markRow(row);
+    selectFlightRow(row);
     let marker = markersDictionary.get(airplaneItem.flight_id);
-    marker.setIcon(markedMarkerIcon);
+    marker.setIcon(selectedAirplaneIcon);
     if (previousMarkedAirplane && previousMarkedAirplane.localeCompare(airplaneItem.flight_id)) {
         let prevMark = markersDictionary.get(previousMarkedAirplane)
-        prevMark.setIcon(markerIcon);
+        prevMark.setIcon(unselectedAirplaneIcon);
     }
     previousMarkedAirplane = airplaneItem.flight_id;
 }
 
-function markRow(row) { //Marks the row was clicked (or matching plane was clicked)
+function selectFlightRow(row) { //Marks the row was clicked (or matching plane was clicked)
     if (previousMarkedRow) {
         previousMarkedRow.classList.remove("bg-primary"); //Unmark the previous row
     }
     row.classList.add("bg-primary"); //Mark the new row
     previousMarkedRow = row; 
 }
-
 
 function showFlightPlan(item) { //Show details of marked flight in the bottom table
     let td = document.getElementById("flight_details");
@@ -310,7 +322,7 @@ function removeFlight(airplaneItem, map, markersDictionary) {
             url: url,
             dataType: 'json',
             error: function () {
-                alert("problemm delete");
+                showError("Deletion problem");
             }
         });
     }
@@ -380,17 +392,17 @@ function clickOnAirplane(item, map, polyline, e) {
             row = tds[i];
         }
     }
-    markRow(row);
+    selectFlightRow(row);
 
     //switch all markers icons' to non-marked icon
     map.eachLayer(function (layer) {
         if (layer instanceof L.Marker) {
-            layer.setIcon(markerIcon);
+            layer.setIcon(unselectedAirplaneIcon);
         }
     });
     //mark current marker with marked-icon
     var layer = e.target;
-    layer.setIcon(markedMarkerIcon);
+    layer.setIcon(selectedAirplaneIcon);
     previousMarkedAirplane = layer.id;
     //getFlightPlanByItem(item);
 }
@@ -435,8 +447,6 @@ function showPath(flight_id, map){
 
 //1. Config button becomes blue after click
 //5. Rotate icon & resize icon for zoom
-//6. Tests
-//7. Ip windoow
-//8. Servers Window
+//6. Tests unpdate
 //9. Raise errors
 

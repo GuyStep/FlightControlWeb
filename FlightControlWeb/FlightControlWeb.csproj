@@ -5,8 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="wwwroot\Images\planeIcon.gif" />
-    <None Include="wwwroot\Images\trash.gif" />
     <None Include="wwwroot\Images\trash.png" />
   </ItemGroup>
 
