@@ -28,175 +28,140 @@ namespace FlightControlWeb.Controllers
         public async Task<ActionResult<IEnumerable<Flight>>> GetFlights([FromQuery] string relative_to = null, [FromQuery] bool syncAll = false)
         {
             List<Flight> flights = new List<Flight>();
-            List<FlightPlan> fp = await _context.FlightPlan.ToListAsync();
             DateTime relative = new DateTime();
-            if (relative_to == null)
-            {
-                return flights;
-            }
+            List<FlightPlan> flightPlans = await _context.FlightPlan.ToListAsync();
+            List<Location> locations = await _context.First_location.ToListAsync();
+            List<Segment> segments = await _context.Segments.ToListAsync();
+            if (relative_to == null) return flights; //No argument passed, return empty list
             try
             {
-                relative = DateTimeOffset.Parse(relative_to).UtcDateTime;
+                relative = DateTimeOffset.Parse(relative_to).UtcDateTime; //Check if time is valid
             }
             catch
             {
-                //if (e.Message == "Unable to parse.")
-                //{
-                    return new List<Flight>();
-                //}
+                return flights; //Invalid argument passed, return empty list
             }
-            foreach (FlightPlan element in fp)
+            flights = AddRelevantFlights(relative, flightPlans, locations, segments, flights);
+            if (syncAll) //If syncall argument passed, get all relevant external flights 
             {
-                string id = element.flight_id;
-                var loc = await _context.first_location.ToListAsync();
-                var seg = await _context.segments.ToListAsync();
-
-                element.initial_location = loc.Where(a => a.flight_id.CompareTo(id) == 0).First();
-                element.segments = seg.Where(a => a.flight_id.CompareTo(id) == 0).ToList();
-
-                DateTime takeOffTime = DateTimeOffset.Parse(element.initial_location.date_time).UtcDateTime;
-                if (DateTime.Compare(relative, takeOffTime) < 0)
-                {
-                    continue;
+                List<Flight> externalFlights = GetExternalFlights(relative_to);
+                if (externalFlights == null) { //No external flights, return only the internal
+                    return flights;
                 }
-                Flight fl = new Flight();
-                double startLat = element.initial_location.latitude;
-                double startLong = element.initial_location.longitude;
-
-                DateTime saveStart = takeOffTime;
-                DateTime test = takeOffTime;
-                foreach (Segment segment in element.segments)
-                {
-                    test = test.AddSeconds(segment.timespan_seconds);
-                    if (DateTime.Compare(relative, takeOffTime) >= 0 &&
-                        DateTime.Compare(relative, test) <= 0)
-                    {
-                        fl.flight_id = element.flight_id;
-                        fl.company_name = element.company_name;
-                        fl.date_time = element.date_time;
-                        fl.is_external = element.is_external;
-                        fl.latitude = element.latitude;
-                        fl.longitude = element.longitude;
-                        fl.passengers = element.passengers;
-                        flights.Add(fl);
-                        break;
-                    }
-                }
-
-
-
-
-                    /* if (syncAll)
-                     {
-                         List<Flight> externalFlights = null;
-                         foreach (Server s in _context.Server)
-                         {
-                             string get = s.ServerURL + "api/Flights?relative_to=" + relative_to + "&syncAll=false";
-                             externalFlights = GetFlightFromSever<List<Flight>>(get);
-                             foreach (Flight f in externalFlights)
-                             {
-                                 f.Is_external = true;
-                                 _context.serverId[f.Flight_id] = s;
-                                 flights.Add(f);
-
-                             }
-                         }
-                     }*/
-                }
-            if (syncAll)
-            {
-                List<Flight> externalFlights = CreateExternalFlights(relative_to);
-                if (externalFlights == null) { 
-                }
-                foreach (Flight exf in externalFlights)
-                {
-                    flights.Add(exf);
-                }
+                foreach (Flight exf in externalFlights) flights.Add(exf);
             }
-
             return flights;
-    }
+        }
 
+        private  List<Flight> AddRelevantFlights(DateTime relative, List<FlightPlan> flightPlans, List<Location> loc, List<Segment> seg, List<Flight> flights)
+        {
 
+            foreach (FlightPlan element in flightPlans)
+            {
+                string id = element.Flight_id;
 
-        private List<Flight> CreateExternalFlights(string relative_to)
+                element.Initial_location = loc.Where(a => a.Flight_id.CompareTo(id) == 0).First();
+                element.Segments = seg.Where(a => a.Flight_id.CompareTo(id) == 0).ToList();
+
+                DateTime takeOffTime = DateTimeOffset.Parse(element.Initial_location.Date_time).UtcDateTime;
+                if (DateTime.Compare(relative, takeOffTime) < 0) continue; //Flight takeoff is after current time
+
+                double startLat = element.Initial_location.Latitude;
+                double startLong = element.Initial_location.Longitude;
+
+                DateTime prevoiousStart = takeOffTime;
+                flights = AddSingleFlight(element, relative, takeOffTime, flights);
+            }
+            return flights;
+        }
+        private List<Flight> AddSingleFlight(FlightPlan element, DateTime relative, DateTime takeOffTime, List<Flight> flights)
+        {
+            DateTime test = takeOffTime;
+            Flight fl = new Flight();
+            foreach (Segment segment in element.Segments)
+            {
+                test = test.AddSeconds(segment.Timespan_seconds);
+                //Check if each segment is withing the valid time frame
+                if (DateTime.Compare(relative, takeOffTime) >= 0 &&
+                    DateTime.Compare(relative, test) <= 0)
+                {
+                    fl.Flight_id = element.Flight_id;
+                    fl.Company_name = element.Company_name;
+                    fl.Date_time = element.Date_time;
+                    fl.Is_external = element.Is_external;
+                    fl.Latitude = element.Latitude;
+                    fl.Longitude = element.Longitude;
+                    fl.Passengers = element.Passengers;
+                    flights.Add(fl);
+                    break; //No need to check the rest, the first match is the relevant one
+                }
+            }
+            return flights;
+        }
+
+        private List<Flight> GetExternalFlights(string relative_to)
         {
             List<Flight> externalFlights = new List<Flight>();
-            foreach (Server s in _context.server)
-            {
-                relative_to = relative_to.Substring(0, 19) + 'Z';
-                string get = s.ServerURL + "/api/Flights?relative_to=" + relative_to;
+            foreach (Server server in _context.Server) //Loop over all the servers, and get their flights
+            {   
 
+                relative_to = relative_to.Substring(0, 19) + 'Z'; //Trim unnesecary digits
+                string get = server.ServerURL + "/api/Flights?relative_to=" + relative_to;
                 try
                 {
-                    externalFlights = GetFlightFromServer<List<Flight>>(get);
-
+                    externalFlights = ReceiveExternal<List<Flight>>(get);
                 }
                 catch (System.Net.WebException)
                 {
                     continue;
                 }
-                if (externalFlights == null)
-                {
-                    return externalFlights;
-                }
-                foreach (Flight f in externalFlights)
-                {
-                    f.is_external = true;
-                    // Save the server that the current flight belongs to him.
-                    try
-                    {
-                        try
-                        {
-                            FlightPlanContext.flightServerDictiontary.Add(f.flight_id, s);
-
-                            //FlightPlanContext.flightServerDictiontary[] = ;
-                            //FlightPlanContext.flightServerDictiontary[f.flight_id] = s;
-                        }
-                        catch
-                        {
-                            continue;
-                        }
-                    }
-                    catch
-                    {
-                        continue;
-                    }
-                }
+                if (externalFlights == null) return externalFlights; //No external flights here
+                externalFlights = UpdateExternalFlights(externalFlights, server);
             }
             _context.SaveChanges();
             return externalFlights;
         }
-        public static T GetFlightFromServer<T>(string serverUrl)
+        private List<Flight> UpdateExternalFlights(List<Flight> externalFlights, Server server)
         {
-            string get = String.Format(serverUrl);
-            // Create request.
+            foreach (Flight flight in externalFlights)
+            {
+                flight.Is_external = true;
+                try //Add pair flight:server to dictionary
+                {
+                    FlightPlanContext.flightServerDictiontary.Add(flight.Flight_id, server);
+                }
+                catch
+                {
+                    continue;
+                }
+            }
+            return externalFlights;
+        }
+        public static T ReceiveExternal<T>(string requestUrl)
+        {
+            string get = String.Format(requestUrl);
             WebRequest request = WebRequest.Create(get);
             request.Method = "GET";
-            HttpWebResponse response = null;
-            // Get response.
-            response = (HttpWebResponse)request.GetResponse();
+            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
             string result = null;
-            // Get data - Json file.
-            using (Stream stream = response.GetResponseStream())
+            using (Stream stream = response.GetResponseStream()) //Receiving data from external server
             {
-                StreamReader sr = new StreamReader(stream);
-                result = sr.ReadToEnd();
-                sr.Close();
+                StreamReader streamReader = new StreamReader(stream);
+                result = streamReader.ReadToEnd();
+                streamReader.Close();
             }
-            if (result == "" || result == null)
+            if (result == "" || result == null) //Recieved empty response
             {
                 return default;
             }
-            // Convert to object.
             T externalFlights = default(T);
-            try
+            try //Convert to json using serialization
             {
-                externalFlights = JsonConvert.DeserializeObject<T>(result);
+                externalFlights = JsonConvert.DeserializeObject<T>(result); 
             }
             catch
             {
-                return default;
+                return default; //Couldnt convert, return empty object
             }
             return externalFlights;
         }
@@ -208,27 +173,23 @@ namespace FlightControlWeb.Controllers
             FlightPlan flight = await _context.FlightPlan.FindAsync(id);
             if (flight == null)
             {
-                return NotFound();
+                return NotFound(); //No such flight found, no deletion was performed
             }
-            var location = await _context.first_location.ToListAsync();
-            _context.first_location.Remove(location.Where(a => a.flight_id.CompareTo(id) == 0).First());
+            var location = await _context.First_location.ToListAsync();
+            _context.First_location.Remove(location.Where(a => a.Flight_id.CompareTo(id) == 0).First());
 
-            var segmentsList = await _context.segments.ToListAsync();
-            var segments = segmentsList.Where(a => a.flight_id.CompareTo(id) == 0).ToList();
-            foreach (Segment element in segments)
+            var segmentsList = await _context.Segments.ToListAsync();
+            var segments = segmentsList.Where(a => a.Flight_id.CompareTo(id) == 0).ToList();
+            foreach (Segment element in segments) //Loop&remove segments
             {
-                _context.segments.Remove(element);
+                _context.Segments.Remove(element);
             }
 
-            _context.FlightPlan.Remove(flight);
+            _context.FlightPlan.Remove(flight); //Remove the flight
             await _context.SaveChangesAsync();
 
             return null;
         }
 
-        private bool FlightExists(string id)
-        {
-            return _context.FlightPlan.Any(e => e.flight_id == id);
-        }
     }
 }

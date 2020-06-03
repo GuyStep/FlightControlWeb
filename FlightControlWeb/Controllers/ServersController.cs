@@ -24,53 +24,7 @@ namespace FlightControlWeb.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Server>>> Getserver()
         {
-            return await _context.server.ToListAsync();
-        }
-
-        // GET: api/Servers/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Server>> GetServer(string id)
-        {
-            var server = await _context.server.FindAsync(id);
-
-            if (server == null)
-            {
-                return NotFound();
-            }
-
-            return server;
-        }
-
-        // PUT: api/Servers/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for
-        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutServer(string id, Server server)
-        {
-            if (id != server.ServerId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(server).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ServerExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
+            return await _context.Server.ToListAsync();
         }
 
         // POST: api/Servers
@@ -79,7 +33,7 @@ namespace FlightControlWeb.Controllers
         [HttpPost]
         public async Task<ActionResult<Server>> PostServer(Server server)
         {
-            _context.server.Add(server);
+            _context.Server.Add(server);
             try
             {
                 await _context.SaveChangesAsync();
@@ -103,13 +57,13 @@ namespace FlightControlWeb.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult<Server>> DeleteServer(string id)
         {
-            var server = await _context.server.FindAsync(id);
+            var server = await _context.Server.FindAsync(id);
             if (server == null)
             {
                 return NotFound();
             }
 
-            _context.server.Remove(server);
+            _context.Server.Remove(server);
             await _context.SaveChangesAsync();
 
             return server;
@@ -117,7 +71,7 @@ namespace FlightControlWeb.Controllers
 
         private bool ServerExists(string id)
         {
-            return _context.server.Any(e => e.ServerId == id);
+            return _context.Server.Any(e => e.ServerId == id);
         }
     }
 }

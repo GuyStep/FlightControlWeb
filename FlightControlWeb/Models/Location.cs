@@ -9,11 +9,10 @@ namespace FlightControlWeb.Models
     public class Location
     {
         [Key]
-        public int key { get; set; }
-
-        public string flight_id { get; set; }
-        public double longitude { get; set; }
-        public double latitude { get; set; }
-        public string date_time { get; set; }
+        public int Key { get; set; }
+        public string Flight_id { get; set; }
+        public double Longitude { get; set; }
+        public double Latitude { get; set; }
+        public string Date_time { get; set; }
     }
 }

@@ -9,12 +9,12 @@ namespace FlightControlWeb.Models
     public class Segment
     {
         [Key]
-        public int key { get; set; }
-        public string flight_id { get; set; }
+        public int Key { get; set; }
+        public string Flight_id { get; set; }
 
-        public double longitude { get; set; }
-        public double latitude { get; set; }
-        public double timespan_seconds { get; set; }
+        public double Longitude { get; set; }
+        public double Latitude { get; set; }
+        public double Timespan_seconds { get; set; }
 
     }
 }

@@ -13,17 +13,17 @@ namespace FlightControlWeb.Models
     {
         [JsonIgnore]
         [Key]
-        public string flight_id { get; set; }
-        public double longitude { get; set; }
-        public double latitude { get; set; }
-        public Location initial_location { get; set; }
-        public int passengers { get; set; }
-        public string company_name { get; set; }
+        public string Flight_id { get; set; }
+        public double Longitude { get; set; }
+        public double Latitude { get; set; }
+        public Location Initial_location { get; set; }
+        public int Passengers { get; set; }
+        public string Company_name { get; set; }
         [JsonIgnore]
-        public string date_time { get; set; }
+        public string Date_time { get; set; }
         [JsonIgnore]
-        public bool is_external { get; set; }
-        public List<Segment> segments { get; set; }
+        public bool Is_external { get; set; }
+        public List<Segment> Segments { get; set; }
 
     }
 }

@@ -1,0 +1,92 @@
+﻿
+/* Always set the map height explicitly to define the size of the div
+        * element that contains the map. */
+#map {
+    height: 300px;
+    border-radius: 10px;
+}
+
+.overlay-div {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    opacity: 1;
+    text-align: center;
+    display: none;
+}
+
+.bg-dark {
+    font-family: "Century Gothic";
+    font-weight: bold;
+    background-image: linear-gradient(to bottom right, rgba(55,185,233), rgba(103,195,198), rgba(160,188,178));
+    margin: 0;
+    height: 100%;
+    overflow: hidden
+}
+
+.table-light {
+    background-color: rgba(176, 178, 181, 0.01);
+    border-style: hidden;
+    color: white;
+}
+
+.btn-primary {
+    color: #41658c;
+    background-color: #d0d0d085;
+    border-color: #b8b4b400;
+    font-weight: 900;
+}
+
+    .btn-primary:hover {
+        color: #2e87e5b0;
+        background-color: #ffffff;
+        border-color: #b8b4b400;
+        font-weight: 900;
+    }
+
+.tbodycolor {
+    color: #526b70;
+}
+
+.bg-primary {
+    //color: #2e87e5b0;
+    color: #ffffff;
+    background-color: #545f5d29 !important;
+    //border-color: #b8b4b400;
+    //font-weight: 900;
+}
+
+    .bg-primary:hover {
+        <!-- color: #2e87e5b0; -->
+        color: #ffffff;
+        background-color: #545f5d29 !important;
+        <!-- border-color: #b8b4b400; -->
+        <!-- font-weight: 900; -->
+    }
+
+#internalFlights {
+    overflow: auto;
+    height: 175px
+}
+
+#externalFlights {
+    overflow: auto;
+    height: 175px
+}
+
+
+#logoDiv {
+    width: auto;
+}
+
+#buttonsDiv {
+    width: auto;
+}
+
+.table thead th {
+    border-bottom: 0px hidden #b8b4b400;
+}
+
+#upperRow {
+    height: 90px;
+}

@@ -25,65 +25,74 @@ namespace FlightControlWeb.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<FlightPlan>>> GetFlightPlan()
         {
-            List<FlightPlan> fp = await _context.FlightPlan.ToListAsync();
-            foreach (FlightPlan element in fp)
+            List<FlightPlan> flightPlans = await _context.FlightPlan.ToListAsync();
+            foreach (FlightPlan element in flightPlans)
             {
-                string id = element.flight_id;
-                var loc = await _context.first_location.ToListAsync();
-                var seg = await _context.segments.ToListAsync();
+                string id = element.Flight_id;
+                var locations = await _context.First_location.ToListAsync();
+                var segments = await _context.Segments.ToListAsync();
 
-                element.initial_location = loc.Where(a => a.flight_id.CompareTo(id) == 0).First();
-                element.segments = seg.Where(a => a.flight_id.CompareTo(id) == 0).ToList();
+                element.Initial_location = locations.Where(a => a.Flight_id.CompareTo(id) == 0).First();
+                element.Segments = segments.Where(a => a.Flight_id.CompareTo(id) == 0).ToList();
             }
-            return fp;
+            return flightPlans;
         }
 
         // GET: api/FlightPlan/5
         [HttpGet("{id}")]
         public async Task<ActionResult<FlightPlan>> GetFlightPlan(string id)
         {
+            FlightPlan resultFlightPlan;
             var flightPlan = await _context.FlightPlan.FindAsync(id);
-
             if (flightPlan != null)
             {
+                var locations = await _context.First_location.ToListAsync();
+                var segments = await _context.Segments.ToListAsync();
+                segments = segments.OrderBy(o => o.Key).ToList(); //Sort the segments by the rigths order of flight
 
-
-                var loc = await _context.first_location.ToListAsync();
-                var seg = await _context.segments.ToListAsync();
-                seg = seg.OrderBy(o => o.key).ToList();
-
-
-                flightPlan.initial_location = loc.Where(a => a.flight_id.CompareTo(id) == 0).First();
-                flightPlan.segments = seg.Where(a => a.flight_id.CompareTo(id) == 0).ToList();
-
+                flightPlan.Initial_location = locations.Where(a => a.Flight_id.CompareTo(id) == 0).First();
+                flightPlan.Segments = segments.Where(a => a.Flight_id.CompareTo(id) == 0).ToList();
+                resultFlightPlan = flightPlan;
             }
             else
             {
-                try
+                //receive server info for the requested flight
+                //var server = FlightPlanContext.flightServerDictiontary[id]; 
+                resultFlightPlan = requestSingleFlight(flightPlan, id);
+
+            }
+            if (resultFlightPlan != null)
+            {
+                return resultFlightPlan;
+            }
+            return NotFound();
+
+        }
+
+        private FlightPlan requestSingleFlight(FlightPlan flightPlan, string id)
+        {
+            try
+            {
+                var server = FlightPlanContext.flightServerDictiontary[id];
+
+                if (server == null) //Check if the flight has a valid server
                 {
-                    var s = FlightPlanContext.flightServerDictiontary[id];
-                    if (s == null)
-                    {
-                        return NotFound();
-                    }
-                    string get = s.ServerURL + "/api/FlightPlan/" + id;
-                    flightPlan = FlightsController.GetFlightFromServer<FlightPlan>(get);
-                    if (flightPlan == null)
-                    {
-                        return NotFound();
-                    }
+                    return null;
                 }
-                catch (Exception)
+                string getRequest = server.ServerURL + "/api/FlightPlan/" + id;
+                flightPlan = FlightsController.ReceiveExternal<FlightPlan>(getRequest);
+                if (flightPlan == null)
                 {
-                    return NotFound();
+                    return null;
                 }
             }
-
-
+            catch (Exception)
+            {
+                return null;
+            }
 
             return flightPlan;
         }
-
 
         // POST: api/FlightPlan
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
@@ -91,44 +100,50 @@ namespace FlightControlWeb.Controllers
         [HttpPost]
         public async Task<ActionResult<FlightPlan>> PostFlightPlan(FlightPlan flightPlan)
         {
-
-            flightPlan.flight_id = getNewId(flightPlan.company_name.ToString(), flightPlan.initial_location.date_time.ToString());
+            string company = flightPlan.Company_name.ToString();
+            string date = flightPlan.Initial_location.Date_time.ToString();
+            flightPlan.Flight_id = GetNewId(company, date); //Generate id
             List<FlightPlan> fp = await _context.FlightPlan.ToListAsync();
-            var exist = fp.Where(a => a.flight_id.CompareTo(flightPlan.flight_id) == 0).ToList();
-            while (exist.Count != 0) {
-                flightPlan.flight_id = getNewId(flightPlan.company_name.ToString(), flightPlan.initial_location.date_time.ToString());
-                exist = fp.Where(a => a.flight_id.CompareTo(flightPlan.flight_id) == 0).ToList();
-            }
-            flightPlan.date_time = flightPlan.initial_location.date_time;
-            flightPlan.longitude = flightPlan.initial_location.longitude;
-            flightPlan.latitude = flightPlan.initial_location.latitude;
-            _context.FlightPlan.Add(flightPlan);
-            var loc = flightPlan.initial_location;
-            loc.flight_id = flightPlan.flight_id;
-            _context.first_location.Add(loc);
-            var seg = flightPlan.segments;
-            foreach (Segment element in seg)
+            //If the id exists (some digits are random), we re-generate a new one
+            var exist = fp.Where(a => a.Flight_id.CompareTo(flightPlan.Flight_id) == 0).ToList();
+            while (exist.Count != 0)
             {
-                element.flight_id = flightPlan.flight_id;
-                _context.segments.Add(element);
+                flightPlan.Flight_id = GetNewId(company, date);
+                exist = fp.Where(a => a.Flight_id.CompareTo(flightPlan.Flight_id) == 0).ToList();
+            }
+
+            flightPlan.Date_time = flightPlan.Initial_location.Date_time;
+            flightPlan.Longitude = flightPlan.Initial_location.Longitude;
+            flightPlan.Latitude = flightPlan.Initial_location.Latitude;
+            _context.FlightPlan.Add(flightPlan);
+            var location = flightPlan.Initial_location;
+            location.Flight_id = flightPlan.Flight_id;
+            _context.First_location.Add(location);
+            var segments = flightPlan.Segments;
+            foreach (Segment element in segments) //loop over flight plan segments and add to context
+            {
+                element.Flight_id = flightPlan.Flight_id;
+                _context.Segments.Add(element);
             }
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetFlightPlan", new { id = flightPlan.flight_id }, flightPlan);
+            return CreatedAtAction("GetFlightPlan", new { id = flightPlan.Flight_id }, flightPlan);
         }
 
         private bool FlightPlanExists(string id)
         {
-            return _context.FlightPlan.Any(e => e.flight_id == id);
+            return _context.FlightPlan.Any(e => e.Flight_id == id);
         }
 
-        private string getNewId(string company,string time)
+        //Generate new id
+        private string GetNewId(string company, string time)
         {
             string ID = "";
-            ID += company.Substring(0, 2);
-            ID += time.Substring(5, 2);
-            ID += time.Substring(8, 2);
+            ID += company.Substring(0, 2);//Use 2 first chars of the company name 
+            ID += time.Substring(5, 2);//Use month number
+            ID += time.Substring(8, 2);//Use day number
 
+            //Add 2 random digits
             var rand = new Random();
             int num = rand.Next(0, 10);
 
